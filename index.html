@@ -6,18 +6,7 @@
     <title>亞東醫院藥學部 - 小兒科藥品劑量建議計算機</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* 自訂學術海軍藍核心主色調 */
-        :root {
-            --color-navy-dark: #1B365D;
-            --color-navy-light: #2C5282;
-            --color-bg-light: #F7FAFC;
-        }
-        body {
-            background-color: var(--color-bg-light);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-    </style>
+    <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body class="flex flex-col min-h-screen">
 
@@ -31,10 +20,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <span id="version-badge" class="bg-blue-800 text-blue-100 text-xs px-2.5 py-1 rounded-full font-medium">v1.0.0</span>
-                <button id="btn-admin-portal" class="text-sm bg-transparent hover:bg-white/10 px-3 py-1.5 rounded border border-white/30 transition">
-                    <i class="fa-solid fa-lock-open mr-1"></i>後台維護
-                </button>
+                <span id="version-badge" class="bg-blue-800 text-blue-100 text-xs px-2.5 py-1 rounded-full font-medium">載入中...</span>
+                <a href="./admin.html" class="text-sm bg-transparent hover:bg-white/10 px-3 py-1.5 rounded border border-white/30 transition flex items-center gap-1">
+                    <i class="fa-solid fa-lock-open"></i>後台維護
+                </a>
             </div>
         </div>
         <div id="announcement-banner" class="bg-blue-900/50 border-t border-blue-800 text-xs text-blue-100 px-4 py-2 text-center hidden">
@@ -43,18 +32,16 @@
     </header>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
-        
         <section class="w-full md:w-1/3 bg-white rounded-lg shadow-sm p-4 border border-gray-100 flex flex-col gap-4">
             <h2 class="text-base font-bold text-[#1B365D] border-b pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-magnifying-glass"></i>藥品篩選器
             </h2>
             <div class="relative">
-                <input type="text" id="search-input" placeholder="輸入學名/商品名/中文名..." 
-                       class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#1B365D] text-sm">
+                <input type="text" id="search-input" placeholder="輸入學名/商品名/中文名..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#1B365D] text-sm">
                 <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
             </div>
             <div class="flex-grow overflow-y-auto max-h-[300px] md:max-h-[500px]" id="category-tree">
-                <p class="text-xs text-gray-400 italic text-center py-4">正在從雲端載入藥品資料庫...</p>
+                <p class="text-xs text-gray-400 italic text-center py-4" id="loading-status">準備從雲端載入藥品資料庫...</p>
             </div>
         </section>
 
@@ -62,30 +49,24 @@
             <h2 class="text-base font-bold text-[#1B365D] border-b pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-calculator"></i>劑量計算主機
             </h2>
-            
             <div id="calc-placeholder" class="text-center py-20 text-gray-400 flex flex-col items-center gap-3">
                 <i class="fa-solid fa-hand-pointer text-4xl text-gray-300"></i>
                 <p class="text-sm">請由左側選擇或搜尋小兒科藥品以開始計算</p>
             </div>
-
             <div id="calc-panel" class="hidden flex flex-col gap-5">
                 <div class="bg-gray-50 p-4 rounded border border-gray-200">
                     <div class="flex justify-between items-start">
                         <h3 id="drug-title" class="text-lg font-bold text-[#1B365D]">藥品名稱</h3>
-                        <span id="drug-max-badge" class="bg-red-50 text-red-700 text-xs px-2 py-0.5 rounded border border-red-200 font-medium"></span>
+                        <span id="drug-max-badge" class="bg-red-50 text-red-700 text-xs px-2 py-0.5 rounded border border-red-200 font-medium hidden"></span>
                     </div>
                     <p id="drug-meta" class="text-xs text-gray-500 mt-1 leading-relaxed"></p>
                 </div>
-
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1.5">請選擇計算方法/臨床指引：</label>
                     <select id="formula-select" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D]"></select>
                     <p id="formula-remark" class="text-xs text-blue-600 mt-1 italic"></p>
                 </div>
-
-                <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                    </div>
-
+                <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"></div>
                 <div class="mt-4 border-t pt-5 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
                     <span class="block text-xs font-bold text-gray-600 mb-1">計算建議劑量：</span>
                     <div class="flex items-baseline gap-2">
@@ -105,28 +86,8 @@
         &copy; 2026 亞東紀念醫院藥學部. All Rights Reserved. 智慧運管組維護.
     </footer>
 
-    <script>
-        // 部署核心提示：請將下方引號內替換為您在第一階段複製的 Google Apps Script Web App 網址
-        const GAS_API_URL = "你的GAS網頁應用程式網址";
-
-        // 全域暫存變數
-        let ALL_DRUGS = [];
-        let ALL_PARAMETERS = [];
-
-        // 網頁載入時初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("計算機前端框架已載入。準備串接 API...");
-            if(GAS_API_URL === "AKfycbxEnA79SWNy5m-sVhVl7wxMINbI3wXLI5Bsz3MbNGSgowU1WE_Lr40pDLu712wTATzA") {
-                alert("提醒：請先在 index.html 程式碼中填入您的 GAS Web App 網址！");
-            } else {
-                fetchCloudData();
-            }
-        });
-
-        // 從 GAS 獲取雲端試算表資料
-        function fetchCloudData() {
-            // 後續第三階段會在這裡編寫 fetch 邏輯
-        }
-    </script>
+    <script src="./assets/js/config.js"></script>
+    <script src="./assets/js/api.js"></script>
+    <script src="./assets/js/calculator.js"></script>
 </body>
 </html>
