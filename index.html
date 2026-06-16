@@ -27,21 +27,19 @@
                 </a>
             </div>
         </div>
-        <div id="announcement-banner" class="bg-blue-900/50 border-t border-blue-800 text-xs text-blue-100 px-4 py-2 text-center hidden">
-            <i class="fa-solid fa-bullhorn mr-2 text-yellow-400"></i><span id="announcement-text">系統載入中...</span>
-        </div>
     </header>
 
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
+        
         <section class="w-full md:w-1/3 bg-white rounded-lg shadow-sm p-4 border border-gray-100 flex flex-col gap-4">
             <h2 class="text-base font-bold text-[#1B365D] border-b pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-magnifying-glass"></i>藥品篩選器
             </h2>
             <div class="relative">
-                <input type="text" id="search-input" placeholder="輸入學名/商品名/中文名..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#1B365D] text-sm">
+                <input type="text" id="search-input" placeholder="輸入分類/學名/商品名/中文名..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#1B365D] text-sm">
                 <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
             </div>
-            <div class="flex-grow overflow-y-auto max-h-[300px] md:max-h-[500px]" id="category-tree">
+            <div class="flex-grow overflow-y-auto max-h-[400px] md:max-h-[600px]" id="category-tree">
                 <p class="text-xs text-gray-400 italic text-center py-4" id="loading-status">準備從雲端載入藥品資料庫...</p>
             </div>
         </section>
@@ -50,45 +48,36 @@
             <h2 class="text-base font-bold text-[#1B365D] border-b pb-2 flex items-center gap-2">
                 <i class="fa-solid fa-calculator"></i>劑量計算主機
             </h2>
+            
             <div id="calc-placeholder" class="text-center py-20 text-gray-400 flex flex-col items-center gap-3">
                 <i class="fa-solid fa-hand-pointer text-4xl text-gray-300"></i>
                 <p class="text-sm">請由左側選擇或搜尋小兒科藥品以開始計算</p>
             </div>
-            <div id="calc-panel" class="hidden flex flex-col gap-5">
-                <div class="bg-gray-50 p-4 rounded border border-gray-200">
-                    <div class="flex justify-between items-start">
-                        <h3 id="drug-title" class="text-lg font-bold text-[#1B365D]">藥品名稱</h3>
-                        <span id="drug-max-badge" class="bg-red-50 text-red-700 text-xs px-2 py-0.5 rounded border border-red-200 font-medium hidden"></span>
+
+            <div id="calc-panel" class="hidden flex flex-col gap-4">
+                <div class="bg-gray-50 p-4 rounded border border-gray-200 relative">
+                    <h3 id="drug-title" class="text-lg font-bold text-[#1B365D] mb-1">藥品名稱</h3>
+                    <div class="text-xs text-gray-500 flex flex-col gap-1">
+                        <span id="drug-generic">學名：--</span>
+                        <span id="drug-brand">商品名：--</span>
                     </div>
-                    <p id="drug-meta" class="text-xs text-gray-500 mt-1 leading-relaxed"></p>
+                    <a id="drug-url-btn" href="#" target="_blank" class="hidden absolute top-4 right-4 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded border border-purple-200 hover:bg-purple-200 transition">
+                        <i class="fa-solid fa-link"></i> 參考仿單
+                    </a>
                 </div>
+
+                <div id="drug-dose-inst-container" class="hidden bg-green-50 border border-green-200 p-3 rounded text-sm text-green-800">
+                    <div class="font-bold mb-1 flex items-center gap-1"><i class="fa-solid fa-book-medical"></i> 臨床建議劑量說明：</div>
+                    <div id="drug-dose-inst" class="whitespace-pre-wrap text-xs"></div>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1.5">請選擇計算方法/臨床指引：</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">請選擇臨床適應症 / 年齡段 / 計算方法：</label>
                     <select id="formula-select" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D]"></select>
                     <p id="formula-remark" class="text-xs text-blue-600 mt-1 italic"></p>
                 </div>
-                <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"></div>
-                <div class="mt-4 border-t pt-5 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                    <span class="block text-xs font-bold text-gray-600 mb-1">計算建議劑量：</span>
-                    <div class="flex items-baseline gap-2">
-                        <span id="result-value" class="text-3xl font-extrabold text-[#1B365D]">--</span>
-                        <span id="result-unit" class="text-sm font-bold text-gray-600"></span>
-                    </div>
-                    <div id="limit-warning" class="mt-2 text-xs text-red-600 font-bold hidden flex items-center gap-1.5">
-                        <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
-                        <span id="warning-text">警告：已超過該藥品單次絕對最大劑量！</span>
-                    </div>
+
+                <div id="absolute-max-alert" class="hidden bg-red-50 border border-red-200 p-2 rounded text-xs text-red-700 font-bold flex gap-4">
+                    <span id="single-max-text"></span>
+                    <span id="daily-max-text"></span>
                 </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="bg-gray-100 border-t border-gray-200 py-3 text-center text-xs text-gray-500">
-        &copy; 2026 亞東紀念醫院藥學部. All Rights Reserved. 智慧運管組維護.
-    </footer>
-
-    <script src="./assets/js/config.js"></script>
-    <script src="./assets/js/api.js"></script>
-    <script src="./assets/js/calculator.js"></script>
-</body>
-</html>
