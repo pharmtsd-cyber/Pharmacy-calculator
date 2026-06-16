@@ -1,4 +1,5 @@
 let CURRENT_USER = null;
+let CONTEXT_DRUG = null; // 當前正在編輯公式的藥品
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login').onclick = handleLogin;
@@ -11,13 +12,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-cancel-param').onclick = resetParameterForm;
     document.getElementById('btn-save-drug').onclick = saveDrug;
     document.getElementById('btn-cancel-drug').onclick = resetDrugForm;
+    
+    // 公式區塊的按鈕
+    document.getElementById('btn-show-add-formula').onclick = () => { resetFormulaForm(); document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
+    document.getElementById('btn-close-formula-editor').onclick = () => document.getElementById('formula-editor-container').classList.add('hidden');
     document.getElementById('btn-save-formula').onclick = saveFormula;
-    document.getElementById('btn-cancel-formula').onclick = resetFormulaForm;
 
     document.getElementById('filter-staff').addEventListener('input', renderLists);
     document.getElementById('filter-params').addEventListener('input', renderLists);
     document.getElementById('filter-drugs').addEventListener('input', renderLists);
-    document.getElementById('filter-formulas').addEventListener('input', renderLists);
 
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -27,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
             tabContents.forEach(t => t.classList.remove('active'));
             item.classList.add('active');
             document.getElementById(item.getAttribute('data-target')).classList.add('active');
+            
+            // 如果點擊離開了公式頁面，隱藏側邊欄的公式按鈕
+            if (item.getAttribute('data-target') !== 'formulas') {
+                document.getElementById('nav-formulas').classList.add('hidden');
+            }
         });
     });
 
@@ -85,7 +93,10 @@ async function loadAllData() {
         document.getElementById('stat-params').innerText = STORE.parameters.length;
         document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-        renderLists(); renderDrugSelect(); renderParameterPad();
+        renderLists(); renderParameterPad();
+        
+        // 如果目前正在編輯某藥品的公式，重新渲染專屬清單
+        if (CONTEXT_DRUG) renderLocalFormulas();
     } catch(e) { console.error(e); }
 }
 
@@ -93,7 +104,6 @@ function renderLists() {
     const fStaff = document.getElementById('filter-staff').value.toLowerCase();
     const fParams = document.getElementById('filter-params').value.toLowerCase();
     const fDrugs = document.getElementById('filter-drugs').value.toLowerCase();
-    const fFormulas = document.getElementById('filter-formulas').value.toLowerCase();
 
     document.getElementById('list-staff').innerHTML = STORE.staff.filter(s => (s.name||'').toLowerCase().includes(fStaff) || String(s.emp_id).includes(fStaff))
         .map(s => `<tr><td>${s.emp_id}</td><td>${s.name}</td><td>${s.role}</td><td><span class="${s.status==='Y'?'text-green-600':'text-red-500'}">${s.status}</span></td>
@@ -103,23 +113,68 @@ function renderLists() {
         .map(p => `<tr><td>${p.param_code}</td><td>${p.param_name}</td><td>${p.default_unit}</td>
             <td><button onclick='editParameter(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteParameter', '${p.param_code}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 
-    // 修正 Drug undefined: 使用預設空字串
+    // 藥品清單：加入公式管理的快捷按鈕
     document.getElementById('list-drugs').innerHTML = STORE.drugs.filter(d => ((d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase().includes(fDrugs))
-        .map(d => `<tr>
+        .map(d => {
+            const formulaCount = STORE.formulas.filter(f => f.drug_id === d.drug_id).length;
+            return `<tr>
             <td><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span>${d.cat_2 ? `<i class="fa-solid fa-angle-right text-[10px] mx-1 text-gray-400"></i><span class="bg-blue-50 text-blue-800 text-[10px] px-1 rounded">${d.cat_2}</span>` : ''}</td>
             <td><div class="font-bold text-blue-900">${d.local_name||'無中文名稱'} ${d.common_brand?'('+d.common_brand+')':''}</div><div class="text-[10px] text-gray-500">${d.generic_name||'無一般名稱'}</div></td>
             <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
-            <td><button onclick='editDrug(${JSON.stringify(d).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
-
-    // 修正 Formula undefined: 根據 ID 查找 Drug，若無則顯示未知藥品
-    document.getElementById('list-formulas').innerHTML = STORE.formulas.map(f => {
-        const drug = STORE.drugs.find(d => d.drug_id === f.drug_id);
-        return { ...f, drug_name: drug ? (drug.local_name || drug.generic_name || '無名稱') : '未知藥品' };
-    }).filter(f => (f.drug_name||'').toLowerCase().includes(fFormulas) || (f.formula_name||'').toLowerCase().includes(fFormulas))
-        .map(f => `<tr><td class="font-bold">${f.drug_name}</td><td>${f.formula_name}</td><td class="font-mono text-xs text-blue-800 bg-blue-50 p-1 rounded">${f.formula_string}</td>
-            <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
-            <td><button onclick='editFormula(${JSON.stringify(f).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            <td>
+                <button onclick="openFormulaManager('${d.drug_id}')" class="text-purple-600 hover:text-purple-800 mr-3 font-bold text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200" title="管理專屬公式">
+                    <i class="fa-solid fa-flask"></i> 公式 (${formulaCount})
+                </button>
+                <button onclick='editDrug(${JSON.stringify(d).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2" title="編輯藥品"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
+            </td></tr>`;
+        }).join('');
 }
+
+// ==========================================
+// 藥品專屬公式主從切換邏輯 (Master-Detail)
+// ==========================================
+function openFormulaManager(drugId) {
+    CONTEXT_DRUG = STORE.drugs.find(d => d.drug_id === drugId);
+    if (!CONTEXT_DRUG) return;
+
+    // 1. 設定畫面標題
+    document.getElementById('formula-context-name').innerText = CONTEXT_DRUG.local_name || CONTEXT_DRUG.generic_name || '未命名藥品';
+    
+    // 2. 切換分頁
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('formulas').classList.add('active');
+    
+    // 顯示側邊導覽的動態按鈕
+    const navFormula = document.getElementById('nav-formulas');
+    navFormula.classList.remove('hidden');
+    navFormula.classList.add('active');
+
+    // 3. 隱藏編輯器並重新渲染清單
+    document.getElementById('formula-editor-container').classList.add('hidden');
+    renderLocalFormulas();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderLocalFormulas() {
+    if (!CONTEXT_DRUG) return;
+    const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id);
+    
+    document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
+        ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
+        : localFormulas.map(f => `
+            <tr class="cursor-pointer hover:bg-blue-50 transition" onclick='editFormula(${JSON.stringify(f).replace(/'/g, "&#39;")})'>
+                <td class="font-bold text-blue-900"><i class="fa-solid fa-pen text-xs text-gray-300 mr-1"></i> ${f.formula_name}</td>
+                <td class="font-mono text-xs text-blue-800 bg-blue-50/50 p-1 rounded break-all">${f.formula_string}</td>
+                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                <td onclick="event.stopPropagation()">
+                    <button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700 bg-white p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join('');
+}
+
 
 async function saveStaff() {
     if (CURRENT_USER.role !== 'Admin' && CURRENT_USER.role !== 'Programmer') return alert('權限不足');
@@ -171,26 +226,35 @@ async function saveDrug() {
 }
 
 function editFormula(f) {
-    document.getElementById('formula-mode').value = 'edit'; document.getElementById('formula-id').value = f.formula_id; document.getElementById('admin-drug-select').value = f.drug_id;
+    document.getElementById('formula-mode').value = 'edit'; document.getElementById('formula-id').value = f.formula_id; 
     document.getElementById('admin-formula-name').value = f.formula_name; document.getElementById('admin-result-unit').value = f.result_unit; document.getElementById('admin-remark').value = f.remark || '';
     document.getElementById('formula-single-max').value = f.single_max||''; document.getElementById('formula-single-unit').value = f.single_max_unit||''; document.getElementById('formula-daily-max').value = f.daily_max||''; document.getElementById('formula-daily-unit').value = f.daily_max_unit||'';
     document.getElementById('admin-formula-string').value = f.formula_string; generateTestInputs();
-    document.getElementById('btn-save-formula').innerText = "更新公式"; document.getElementById('btn-cancel-formula').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    document.getElementById('formula-editor-title').innerText = "編輯公式：" + f.formula_name;
+    document.getElementById('btn-save-formula').innerText = "更新儲存"; 
+    document.getElementById('formula-editor-container').classList.remove('hidden'); 
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 function resetFormulaForm() {
     document.getElementById('formula-mode').value = 'add'; document.getElementById('formula-id').value = '';
-    ['admin-drug-select','admin-formula-name','admin-result-unit','admin-remark','formula-single-max','formula-single-unit','formula-daily-max','formula-daily-unit','admin-formula-string'].forEach(id => document.getElementById(id).value = '');
+    ['admin-formula-name','admin-result-unit','admin-remark','formula-single-max','formula-single-unit','formula-daily-max','formula-daily-unit','admin-formula-string'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('admin-test-inputs').innerHTML = '請先輸入公式'; document.getElementById('admin-test-result').innerText = '--';
-    document.getElementById('btn-save-formula').innerText = "新增公式"; document.getElementById('btn-cancel-formula').classList.add('hidden');
+    document.getElementById('formula-editor-title').innerText = "新增計算公式";
+    document.getElementById('btn-save-formula').innerText = "新增儲存公式";
 }
 async function saveFormula() {
+    if (!CONTEXT_DRUG) return alert("發生錯誤：遺失藥品關聯綁定。");
     const payload = {
-        action: 'saveFormula', mode: document.getElementById('formula-mode').value, formula_id: document.getElementById('formula-id').value, drug_id: document.getElementById('admin-drug-select').value,
+        action: 'saveFormula', mode: document.getElementById('formula-mode').value, formula_id: document.getElementById('formula-id').value, 
+        drug_id: CONTEXT_DRUG.drug_id, // 直接由背景指定目前綁定的藥品 ID
         formula_name: document.getElementById('admin-formula-name').value, formula_string: document.getElementById('admin-formula-string').value, result_unit: document.getElementById('admin-result-unit').value,
         single_max: document.getElementById('formula-single-max').value, single_max_unit: document.getElementById('formula-single-unit').value, daily_max: document.getElementById('formula-daily-max').value, daily_max_unit: document.getElementById('formula-daily-unit').value, remark: document.getElementById('admin-remark').value
     };
-    if(!payload.drug_id || !payload.formula_name || !payload.formula_string) return alert("必填欄位空白");
-    await sendPost(payload); resetFormulaForm();
+    if(!payload.formula_name || !payload.formula_string) return alert("必填欄位空白");
+    await sendPost(payload); 
+    resetFormulaForm();
+    document.getElementById('formula-editor-container').classList.add('hidden');
 }
 
 async function sendPost(payload) {
@@ -207,9 +271,6 @@ async function deleteRecord(action, id) {
     await sendPost(payload);
 }
 
-function renderDrugSelect() {
-    document.getElementById('admin-drug-select').innerHTML = '<option value="">-- 請選擇 --</option>' + STORE.drugs.map(d => `<option value="${d.drug_id}">${d.local_name || d.generic_name || '無名稱'}</option>`).join('');
-}
 function renderParameterPad() {
     document.getElementById('admin-param-pad').innerHTML = STORE.parameters.map(p => `<button type="button" class="text-xs bg-[#1B365D] text-white px-2 py-1 rounded hover:bg-blue-800" onclick="const ta=document.getElementById('admin-formula-string'); ta.value = ta.value.substring(0, ta.selectionStart) + '{${p.param_code}}' + ta.value.substring(ta.selectionEnd); generateTestInputs();">${p.param_name}</button>`).join('');
 }
