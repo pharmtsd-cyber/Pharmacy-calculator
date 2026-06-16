@@ -13,7 +13,7 @@
         .tab-content.active { display: block; }
         .nav-item.active { background-color: #2C5282; border-left: 4px solid #63B3ED; }
         .data-table th { background-color: #F7FAFC; color: #4A5568; font-weight: bold; text-align: left; padding: 10px; border-bottom: 2px solid #E2E8F0; }
-        .data-table td { padding: 10px; border-bottom: 1px solid #E2E8F0; color: #2D3748; }
+        .data-table td { padding: 10px; border-bottom: 1px solid #E2E8F0; color: #2D3748; vertical-align: top; }
         .data-table tr:hover { background-color: #F8FAFC; }
     </style>
 </head>
@@ -106,21 +106,27 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4">藥品基本檔維護</h2>
             <div class="bg-white p-5 rounded-lg shadow-sm border mb-6">
                 <input type="hidden" id="drug-mode" value="add"><input type="hidden" id="drug-id">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
                     <div><label class="block text-xs font-bold mb-1 text-blue-600">第一層分類 *</label><input type="text" id="drug-cat1" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1 text-blue-600">第二層分類</label><input type="text" id="drug-cat2" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1 text-blue-600">第三層分類</label><input type="text" id="drug-cat3" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1">狀態</label><select id="drug-status" class="w-full border rounded p-2 text-sm"><option value="Y">啟用</option><option value="N">停用</option></select></div>
                     
                     <div><label class="block text-xs font-bold mb-1">中文名稱 *</label><input type="text" id="drug-local" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">商品名稱</label><input type="text" id="drug-brand" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">常用商品名稱</label><input type="text" id="drug-common-brand" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">一般名稱 (原學名) *</label><input type="text" id="drug-generic" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">狀態</label><select id="drug-status" class="w-full border rounded p-2 text-sm"><option value="Y">啟用</option><option value="N">停用</option></select></div>
                 </div>
-                <div class="mb-3">
-                    <label class="block text-xs font-bold mb-1">成分清單 (多行)</label>
-                    <textarea id="drug-ingred" rows="2" class="w-full border rounded p-2 text-sm"></textarea>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div><label class="block text-xs font-bold mb-1">成分清單 (多行)</label><textarea id="drug-ingred" rows="3" class="w-full border rounded p-2 text-sm"></textarea></div>
+                    <div><label class="block text-xs font-bold mb-1 text-green-700">建議劑量說明 (多行)</label><textarea id="drug-dose-inst" rows="3" class="w-full border border-green-200 rounded p-2 text-sm"></textarea></div>
                 </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold mb-1 text-purple-700">網址列 (參考來源/仿單連結)</label>
+                    <input type="text" id="drug-url" placeholder="https://..." class="w-full border border-purple-200 rounded p-2 text-sm">
+                </div>
+
                 <div class="flex gap-2">
                     <button id="btn-save-drug" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">儲存藥品</button>
                     <button id="btn-cancel-drug" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
