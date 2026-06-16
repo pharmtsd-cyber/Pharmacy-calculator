@@ -12,7 +12,6 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .nav-item.active { background-color: #2C5282; border-left: 4px solid #63B3ED; }
-        /* 表格優化 */
         .data-table th { background-color: #F7FAFC; color: #4A5568; font-weight: bold; text-align: left; padding: 10px; border-bottom: 2px solid #E2E8F0; }
         .data-table td { padding: 10px; border-bottom: 1px solid #E2E8F0; color: #2D3748; }
         .data-table tr:hover { background-color: #F8FAFC; }
@@ -22,134 +21,105 @@
 
     <div id="login-overlay" class="absolute inset-0 bg-[#1B365D] z-50 flex items-center justify-center">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm text-center">
-            <i class="fa-solid fa-server text-4xl text-[#1B365D] mb-4"></i>
-            <h2 class="text-xl font-bold text-gray-800 mb-6">智能運管後台登入</h2>
-            <input type="text" id="login-id" placeholder="員工編號" class="w-full border rounded p-3 mb-4 text-sm focus:outline-none focus:border-[#1B365D]">
-            <input type="password" id="login-pw" placeholder="登入密碼" class="w-full border rounded p-3 mb-6 text-sm focus:outline-none focus:border-[#1B365D]" autocomplete="new-password">
-            <button id="btn-login" class="w-full bg-[#1B365D] text-white font-bold py-3 rounded hover:bg-blue-900 transition">登入系統</button>
-            <p id="login-msg" class="text-red-500 text-xs mt-3 h-4"></p>
-            <a href="./index.html" class="block mt-4 text-sm text-gray-500 hover:text-gray-800">返回前端計算機</a>
+            <i class="fa-solid fa-server text-4xl text-[#1B365D] mb-4"></i><h2 class="text-xl font-bold text-gray-800 mb-6">智能運管後台</h2>
+            <input type="text" id="login-id" placeholder="員工編號" class="w-full border rounded p-3 mb-4 text-sm"><input type="password" id="login-pw" placeholder="登入密碼" class="w-full border rounded p-3 mb-6 text-sm">
+            <button id="btn-login" class="w-full bg-[#1B365D] text-white font-bold py-3 rounded hover:bg-blue-900 transition">登入系統</button><p id="login-msg" class="text-red-500 text-xs mt-3 h-4"></p>
+            <a href="./index.html" class="block mt-4 text-sm text-gray-500 hover:text-gray-800">返回前端</a>
         </div>
     </div>
-
     <div id="pw-modal" class="hidden absolute inset-0 bg-black/50 z-40 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg w-full max-w-sm">
-            <h3 class="font-bold text-lg mb-4 text-[#1B365D]">修改個人密碼</h3>
-            <input type="password" id="pw-old" placeholder="原密碼" class="w-full border rounded p-2 mb-3 text-sm">
-            <input type="password" id="pw-new" placeholder="新密碼" class="w-full border rounded p-2 mb-4 text-sm">
-            <div class="flex justify-end gap-2">
-                <button id="btn-pw-cancel" class="px-4 py-2 text-sm bg-gray-200 rounded hover:bg-gray-300">取消</button>
-                <button id="btn-pw-save" class="px-4 py-2 text-sm bg-[#1B365D] text-white rounded hover:bg-blue-900">儲存修改</button>
-            </div>
+        <div class="bg-white p-6 rounded-lg w-full max-w-sm"><h3 class="font-bold text-lg mb-4 text-[#1B365D]">修改密碼</h3>
+            <input type="password" id="pw-old" placeholder="原密碼" class="w-full border rounded p-2 mb-3 text-sm"><input type="password" id="pw-new" placeholder="新密碼" class="w-full border rounded p-2 mb-4 text-sm">
+            <div class="flex justify-end gap-2"><button id="btn-pw-cancel" class="px-4 py-2 text-sm bg-gray-200 rounded">取消</button><button id="btn-pw-save" class="px-4 py-2 text-sm bg-[#1B365D] text-white rounded">儲存修改</button></div>
         </div>
     </div>
 
     <aside class="w-64 bg-[#1B365D] text-white flex flex-col shadow-xl">
-        <div class="p-5 border-b border-white/20">
-            <h1 class="text-lg font-bold flex items-center gap-2">
-                <i class="fa-solid fa-server text-blue-300"></i>智能運管後台
-            </h1>
-            <p class="text-xs text-blue-200 mt-1" id="current-user-info">登入身分載入中...</p>
-        </div>
-        <nav class="flex-grow py-4">
-            <ul class="flex flex-col">
-                <li class="nav-item active px-5 py-3 cursor-pointer hover:bg-white/10 transition flex items-center gap-3" data-target="dashboard"><i class="fa-solid fa-house w-5"></i> 系統主畫面</li>
-                <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 transition flex items-center gap-3" data-target="staff"><i class="fa-solid fa-user-doctor w-5"></i> 管理藥師清單</li>
-                <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 transition flex items-center gap-3" data-target="params"><i class="fa-solid fa-tags w-5"></i> 參數基本檔維護</li>
-                <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 transition flex items-center gap-3" data-target="drugs"><i class="fa-solid fa-pills w-5"></i> 藥品基本檔維護</li>
-                <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 transition flex items-center gap-3" data-target="formulas"><i class="fa-solid fa-flask w-5"></i> 視覺化公式維護</li>
-            </ul>
-        </nav>
+        <div class="p-5 border-b border-white/20"><h1 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-server text-blue-300"></i>智能運管後台</h1><p class="text-xs text-blue-200 mt-1" id="current-user-info">載入中...</p></div>
+        <nav class="flex-grow py-4"><ul class="flex flex-col">
+            <li class="nav-item active px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3" data-target="dashboard"><i class="fa-solid fa-house w-5"></i> 系統主畫面</li>
+            <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3" data-target="staff"><i class="fa-solid fa-user-doctor w-5"></i> 管理藥師清單</li>
+            <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3" data-target="params"><i class="fa-solid fa-tags w-5"></i> 參數基本檔維護</li>
+            <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3" data-target="drugs"><i class="fa-solid fa-pills w-5"></i> 藥品基本檔維護</li>
+            <li class="nav-item px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3" data-target="formulas"><i class="fa-solid fa-flask w-5"></i> 視覺化公式維護</li>
+        </ul></nav>
         <div class="p-4 border-t border-white/20 flex flex-col gap-2">
-            <button id="btn-open-pw" class="w-full text-center text-sm bg-blue-800 hover:bg-blue-700 py-2 rounded transition"><i class="fa-solid fa-key mr-1"></i> 修改密碼</button>
-            <a href="./index.html" class="block text-center text-sm bg-transparent border border-white/40 hover:bg-white/10 py-2 rounded transition"><i class="fa-solid fa-arrow-left mr-1"></i> 返回前端</a>
+            <button id="btn-open-pw" class="w-full text-sm bg-blue-800 py-2 rounded"><i class="fa-solid fa-key mr-1"></i> 修改密碼</button><a href="./index.html" class="block text-center text-sm border border-white/40 py-2 rounded"><i class="fa-solid fa-arrow-left mr-1"></i> 返回前端</a>
         </div>
     </aside>
 
     <main class="flex-grow p-8 overflow-y-auto w-[calc(100%-16rem)]">
-        
         <section id="dashboard" class="tab-content active">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">歡迎回來，<span id="dash-name">管理員</span></h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-5 rounded-lg shadow-sm border-t-4 border-t-blue-500">
-                    <div class="text-gray-500 text-xs font-bold">總收錄藥品數</div>
-                    <div class="text-2xl font-extrabold text-[#1B365D] mt-1" id="stat-drugs">--</div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-t-4 border-t-green-500">
-                    <div class="text-gray-500 text-xs font-bold">已建立公式數</div>
-                    <div class="text-2xl font-extrabold text-[#1B365D] mt-1" id="stat-formulas">--</div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-t-4 border-t-purple-500">
-                    <div class="text-gray-500 text-xs font-bold">維護參數總數</div>
-                    <div class="text-2xl font-extrabold text-[#1B365D] mt-1" id="stat-params">--</div>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border-t-4 border-t-orange-500">
-                    <div class="text-gray-500 text-xs font-bold">授權藥師人數</div>
-                    <div class="text-2xl font-extrabold text-[#1B365D] mt-1" id="stat-staff">--</div>
-                </div>
+            <div class="grid grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded border-t-4 border-t-blue-500 shadow-sm"><div class="text-xs text-gray-500 font-bold">總收錄藥品數</div><div class="text-2xl font-extrabold text-[#1B365D]" id="stat-drugs">--</div></div>
+                <div class="bg-white p-5 rounded border-t-4 border-t-green-500 shadow-sm"><div class="text-xs text-gray-500 font-bold">已建立公式數</div><div class="text-2xl font-extrabold text-[#1B365D]" id="stat-formulas">--</div></div>
+                <div class="bg-white p-5 rounded border-t-4 border-t-purple-500 shadow-sm"><div class="text-xs text-gray-500 font-bold">維護參數總數</div><div class="text-2xl font-extrabold text-[#1B365D]" id="stat-params">--</div></div>
+                <div class="bg-white p-5 rounded border-t-4 border-t-orange-500 shadow-sm"><div class="text-xs text-gray-500 font-bold">授權藥師人數</div><div class="text-2xl font-extrabold text-[#1B365D]" id="stat-staff">--</div></div>
             </div>
         </section>
 
         <section id="staff" class="tab-content">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">管理藥師清單維護</h2>
             <div id="staff-form-area" class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-3xl">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1">員工編號 *</label><input type="text" id="staff-id" class="w-full border rounded p-2 text-sm focus:border-[#1B365D]"></div>
-                    <div><label class="block text-xs font-bold mb-1">姓名 *</label><input type="text" id="staff-name" class="w-full border rounded p-2 text-sm focus:border-[#1B365D]"></div>
+                <div class="grid grid-cols-4 gap-4 mb-3">
+                    <div><label class="block text-xs font-bold mb-1">員工編號 *</label><input type="text" id="staff-id" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1">姓名 *</label><input type="text" id="staff-name" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">權限</label><select id="staff-role" class="w-full border rounded p-2 text-sm"><option value="Admin">Admin</option><option value="Programmer">Programmer</option><option value="Maintainer" selected>Maintainer</option></select></div>
                     <div><label class="block text-xs font-bold mb-1">狀態</label><select id="staff-status" class="w-full border rounded p-2 text-sm"><option value="Y">啟用</option><option value="N">停用</option></select></div>
                 </div>
-                <button id="btn-save-staff" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增藥師 (預設密碼為員編)</button>
-                <p class="text-xs text-red-500 mt-2 italic">* 僅最高權限管理員與程式管理員可新增/刪除藥師。</p>
+                <button id="btn-save-staff" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增藥師</button>
             </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <table class="w-full data-table text-sm">
-                    <thead><tr><th>員工編號</th><th>姓名</th><th>權限</th><th>狀態</th><th>操作</th></tr></thead>
-                    <tbody id="list-staff"></tbody>
-                </table>
+                <div class="p-3 bg-gray-50 border-b flex items-center justify-between">
+                    <span class="font-bold text-sm text-gray-700">藥師清單</span>
+                    <input type="text" id="filter-staff" placeholder="模糊搜尋..." class="border rounded p-1.5 text-sm w-64">
+                </div>
+                <table class="w-full data-table text-sm"><thead><tr><th>員工編號</th><th>姓名</th><th>權限</th><th>狀態</th><th>操作</th></tr></thead><tbody id="list-staff"></tbody></table>
             </div>
         </section>
 
         <section id="params" class="tab-content">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">參數基本檔維護</h2>
-            <div class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-4xl">
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1">代碼 (限英文) *</label><input type="text" id="param-code" class="w-full border rounded p-2 text-sm"></div>
+            <div class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-3xl">
+                <input type="hidden" id="param-mode" value="add">
+                <div class="grid grid-cols-3 gap-4 mb-3">
+                    <div><label class="block text-xs font-bold mb-1">代碼 (限英文，不可重複) *</label><input type="text" id="param-code" class="w-full border rounded p-2 text-sm disabled:bg-gray-100"></div>
                     <div><label class="block text-xs font-bold mb-1">中文名稱 *</label><input type="text" id="param-name" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">預設單位 *</label><input type="text" id="param-unit" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">切換單位</label><input type="text" id="param-alt-unit" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">轉換率</label><input type="number" id="param-rate" step="any" class="w-full border rounded p-2 text-sm"></div>
                 </div>
-                <button id="btn-save-param" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增參數</button>
+                <div class="flex gap-2">
+                    <button id="btn-save-param" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增參數</button>
+                    <button id="btn-cancel-param" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
+                </div>
             </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <table class="w-full data-table text-sm">
-                    <thead><tr><th>代碼</th><th>名稱</th><th>預設單位</th><th>切換單位</th><th>操作</th></tr></thead>
-                    <tbody id="list-params"></tbody>
-                </table>
+                <div class="p-3 bg-gray-50 border-b flex items-center justify-between">
+                    <span class="font-bold text-sm text-gray-700">參數清單</span>
+                    <input type="text" id="filter-params" placeholder="模糊搜尋..." class="border rounded p-1.5 text-sm w-64">
+                </div>
+                <table class="w-full data-table text-sm"><thead><tr><th>代碼</th><th>名稱</th><th>預設單位</th><th>操作</th></tr></thead><tbody id="list-params"></tbody></table>
             </div>
         </section>
 
         <section id="drugs" class="tab-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">藥品基本檔與分類維護</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">藥品基本檔維護</h2>
             <div class="bg-white p-5 rounded-lg shadow-sm border mb-6">
-                <input type="hidden" id="drug-mode" value="add">
-                <input type="hidden" id="drug-id">
+                <input type="hidden" id="drug-mode" value="add"><input type="hidden" id="drug-id">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第一層分類 *</label><input type="text" id="drug-cat1" placeholder="例如：抗生素" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第二層分類</label><input type="text" id="drug-cat2" placeholder="例如：青黴素類" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第三層分類</label><input type="text" id="drug-cat3" placeholder="例如：口服製劑" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第一層分類 *</label><input type="text" id="drug-cat1" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第二層分類</label><input type="text" id="drug-cat2" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第三層分類</label><input type="text" id="drug-cat3" class="w-full border rounded p-2 text-sm"></div>
                     
                     <div><label class="block text-xs font-bold mb-1">中文名稱 *</label><input type="text" id="drug-local" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">商品名</label><input type="text" id="drug-brand" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">英文學名 *</label><input type="text" id="drug-generic" class="w-full border rounded p-2 text-sm"></div>
-                    
-                    <div><label class="block text-xs font-bold mb-1">成分清單</label><input type="text" id="drug-ingred" class="w-full border rounded p-2 text-sm"></div>
-                    <div class="flex gap-2">
-                        <div class="w-1/2"><label class="block text-xs font-bold mb-1 text-red-600">單次最大劑量上限</label><input type="number" step="any" id="drug-max" class="w-full border border-red-200 rounded p-2 text-sm"></div>
-                        <div class="w-1/2"><label class="block text-xs font-bold mb-1 text-red-600">上限單位</label><input type="text" id="drug-max-unit" placeholder="如 mg" class="w-full border border-red-200 rounded p-2 text-sm"></div>
-                    </div>
+                    <div><label class="block text-xs font-bold mb-1">商品名稱</label><input type="text" id="drug-brand" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1">常用商品名稱</label><input type="text" id="drug-common-brand" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1">一般名稱 (原學名) *</label><input type="text" id="drug-generic" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">狀態</label><select id="drug-status" class="w-full border rounded p-2 text-sm"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-xs font-bold mb-1">成分清單 (多行)</label>
+                    <textarea id="drug-ingred" rows="2" class="w-full border rounded p-2 text-sm"></textarea>
                 </div>
                 <div class="flex gap-2">
                     <button id="btn-save-drug" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">儲存藥品</button>
@@ -157,42 +127,50 @@
                 </div>
             </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <table class="w-full data-table text-sm">
-                    <thead><tr><th>三層分類</th><th>中文名 / 商品名 / 學名</th><th>最大上限</th><th>操作</th></tr></thead>
-                    <tbody id="list-drugs"></tbody>
-                </table>
+                <div class="p-3 bg-gray-50 border-b flex items-center justify-between">
+                    <span class="font-bold text-sm text-gray-700">藥品清單</span>
+                    <input type="text" id="filter-drugs" placeholder="模糊篩選(分類/名稱)..." class="border rounded p-1.5 text-sm w-64">
+                </div>
+                <table class="w-full data-table text-sm"><thead><tr><th>三層分類</th><th>中文名 / 商品名 / 一般名稱</th><th>狀態</th><th>操作</th></tr></thead><tbody id="list-drugs"></tbody></table>
             </div>
         </section>
 
         <section id="formulas" class="tab-content">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">視覺化公式維護清單</h2>
             <div class="bg-white p-5 rounded-lg shadow-sm border mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <input type="hidden" id="formula-mode" value="add"><input type="hidden" id="formula-id">
+                <div class="grid grid-cols-4 gap-4 mb-4">
                     <div><label class="block text-xs font-bold mb-1">對應藥品 *</label><select id="admin-drug-select" class="w-full border rounded p-2 text-sm"></select></div>
                     <div><label class="block text-xs font-bold mb-1">計算方法名稱 *</label><input type="text" id="admin-formula-name" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">結果單位 *</label><input type="text" id="admin-result-unit" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">備註提醒</label><input type="text" id="admin-remark" class="w-full border rounded p-2 text-sm"></div>
                 </div>
+                <div class="grid grid-cols-4 gap-4 mb-4 bg-red-50 p-3 rounded border border-red-100">
+                    <div><label class="block text-xs font-bold mb-1 text-red-700">單次最大劑量上限</label><input type="number" step="any" id="formula-single-max" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-red-700">單次上限單位</label><input type="text" id="formula-single-unit" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-red-700">一日最大劑量上限</label><input type="number" step="any" id="formula-daily-max" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-red-700">一日上限單位</label><input type="text" id="formula-daily-unit" class="w-full border rounded p-2 text-sm"></div>
+                </div>
                 <div class="flex flex-col md:flex-row gap-4">
-                    <div class="w-full md:w-1/3 bg-gray-50 p-3 border rounded"><div id="admin-param-pad" class="flex flex-wrap gap-1 mb-2"></div><div class="grid grid-cols-4 gap-1"><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">+</button><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">-</button><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">*</button><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">/</button><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">(</button><button class="op-btn bg-white border rounded text-xs py-1 hover:bg-gray-100 font-bold">)</button></div></div>
+                    <div class="w-full md:w-1/3 bg-gray-50 p-3 border rounded"><div id="admin-param-pad" class="flex flex-wrap gap-1 mb-2"></div><div class="grid grid-cols-4 gap-1"><button class="op-btn bg-white border rounded text-xs py-1 font-bold">+</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold">-</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold">*</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold">/</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold">(</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold">)</button></div></div>
                     <div class="w-full md:w-2/3 flex flex-col gap-2">
                         <textarea id="admin-formula-string" rows="2" class="w-full border rounded p-2 text-sm font-mono" placeholder="組裝公式..."></textarea>
-                        <div class="p-3 bg-blue-50 border border-blue-100 rounded text-xs">
-                            <div id="admin-test-inputs" class="grid grid-cols-3 gap-2 mb-2">請先輸入公式</div>
-                            結果：<span id="admin-test-result" class="font-bold text-lg text-[#1B365D]">--</span>
+                        <div class="p-3 bg-blue-50 border border-blue-100 rounded text-xs"><div id="admin-test-inputs" class="grid grid-cols-3 gap-2 mb-2">請先輸入公式</div>結果：<span id="admin-test-result" class="font-bold text-lg text-[#1B365D]">--</span></div>
+                        <div class="flex justify-end gap-2 mt-2">
+                            <button id="btn-cancel-formula" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
+                            <button id="btn-save-formula" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增公式</button>
                         </div>
-                        <button id="btn-save-formula" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold self-end">新增公式</button>
                     </div>
                 </div>
             </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <table class="w-full data-table text-sm">
-                    <thead><tr><th>對應藥品</th><th>方法名稱</th><th>公式內容</th><th>操作</th></tr></thead>
-                    <tbody id="list-formulas"></tbody>
-                </table>
+                <div class="p-3 bg-gray-50 border-b flex items-center justify-between">
+                    <span class="font-bold text-sm text-gray-700">公式清單</span>
+                    <input type="text" id="filter-formulas" placeholder="模糊篩選..." class="border rounded p-1.5 text-sm w-64">
+                </div>
+                <table class="w-full data-table text-sm"><thead><tr><th>對應藥品</th><th>方法名稱</th><th>公式內容</th><th>單次/單日上限</th><th>操作</th></tr></thead><tbody id="list-formulas"></tbody></table>
             </div>
         </section>
-
     </main>
 
     <script src="./assets/js/config.js"></script>
