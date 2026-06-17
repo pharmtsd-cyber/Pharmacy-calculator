@@ -144,19 +144,28 @@ function selectDrug(drug) {
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
     
-    // 渲染新增的劑型欄位 (如果 HTML 裡沒有這個 div，我們在這邊動態加進去)
+    // 渲染代碼與磨粉 Badge
+    const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
+    if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
+    if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
+    else if(drug.can_crush === 'N') { badgeCrush.innerText = '不可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-red-300 bg-red-50 text-red-700'; badgeCrush.classList.remove('hidden'); }
+    else badgeCrush.classList.add('hidden');
+
+    // 渲染關聯藥品
+    const relContainer = document.getElementById('drug-related-container'), relList = document.getElementById('drug-related-list');
+    if(drug.related_drugs) {
+        relList.innerHTML = drug.related_drugs.split(',').map(r => `<span class="bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded">${r}</span>`).join('');
+        relContainer.classList.remove('hidden');
+    } else relContainer.classList.add('hidden');
+
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
     if (!formRow) {
-        formRow = document.createElement('div');
-        formRow.id = 'drug-form-row';
-        formRow.className = 'border-t border-gray-100 mt-2 pt-2 flex flex-col gap-1';
-        rightMetaContainer.appendChild(formRow);
+        formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'border-t border-gray-100 mt-2 pt-2 flex flex-col gap-1';
+        rightMetaContainer.insertBefore(formRow, document.getElementById('drug-related-container'));
     }
-    formRow.innerHTML = `
-        <div class="flex"><span class="w-24 font-bold text-gray-500">劑型</span><span class="font-medium text-gray-800">${drug.form || '未建立'}</span></div>
-        <div class="flex"><span class="w-24 font-bold text-gray-500">其他劑型</span><span class="font-medium text-gray-800">${drug.other_forms || '無'}</span></div>
-    `;
+    formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">劑型</span><span class="font-medium text-gray-800">${drug.form || '未建立'}</span></div>
+        <div class="flex"><span class="w-24 font-bold text-gray-500">其他劑型</span><span class="font-medium text-gray-800">${(drug.other_forms||'').replace(/,/g, '、') || '無'}</span></div>`;
 
     const urlBtn = document.getElementById('drug-url-btn');
     if (drug.reference_url && drug.reference_url.startsWith('http')) {
