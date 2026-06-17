@@ -156,16 +156,23 @@
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1 text-orange-700">藥品代碼</label><input type="text" id="drug-code" class="w-full border border-orange-200 rounded p-2 text-sm" placeholder="輸入藥品代碼"></div>
-                    <div><label class="block text-xs font-bold mb-1">中文名稱 *</label><input type="text" id="drug-local" class="w-full border rounded p-2 text-sm"></div>
+                    <div><label class="block text-xs font-bold mb-1 text-orange-700">藥品代碼 *</label><input type="text" id="drug-code" class="w-full border border-orange-200 rounded p-2 text-sm" placeholder="輸入藥品代碼"></div>
                     <div><label class="block text-xs font-bold mb-1">一般名稱 (原學名) *</label><input type="text" id="drug-generic" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">是否可磨粉</label><select id="drug-can-crush" class="w-full border rounded p-2 text-sm"><option value="">--請選擇--</option><option value="Y">可磨粉</option><option value="N">不可磨粉</option></select></div>
+                    <div><label class="block text-xs font-bold mb-1">是否可磨粉 *</label>
+                        <select id="drug-can-crush" class="w-full border rounded p-2 text-sm">
+                            <option value="">--請選擇--</option>
+                            <option value="Y">可磨粉</option>
+                            <option value="N">不可磨粉</option>
+                            <option value="NA">此品項非磨粉劑型</option>
+                        </select>
+                    </div>
+                    <div><label class="block text-xs font-bold mb-1">中文名稱</label><input type="text" id="drug-local" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">商品名稱</label><input type="text" id="drug-brand" class="w-full border rounded p-2 text-sm"></div>
                     <div><label class="block text-xs font-bold mb-1">常用商品名稱</label><input type="text" id="drug-common-brand" class="w-full border rounded p-2 text-sm"></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1 text-indigo-700">主要劑型 (單選)</label><select id="drug-form" class="w-full border border-indigo-200 rounded p-2 text-sm"><option value="">--請選擇--</option></select></div>
+                    <div><label class="block text-xs font-bold mb-1 text-indigo-700">主要劑型 (單選) *</label><select id="drug-form" class="w-full border border-indigo-200 rounded p-2 text-sm"><option value="">--請選擇--</option></select></div>
                     
                     <div class="relative">
                         <label class="block text-xs font-bold mb-1 text-indigo-700">其他劑型 (搜尋後點擊加入)</label>
