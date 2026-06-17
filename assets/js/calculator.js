@@ -144,12 +144,29 @@ function selectDrug(drug) {
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
     
-    // 渲染代碼與磨粉 Badge
+// 渲染代碼與磨粉 Badge
     const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
     if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
-    if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
-    else if(drug.can_crush === 'N') { badgeCrush.innerText = '不可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-red-300 bg-red-50 text-red-700'; badgeCrush.classList.remove('hidden'); }
-    else badgeCrush.classList.add('hidden');
+    
+    // 【修改處】新增「非磨粉劑型」的灰色標籤顯示
+    if(drug.can_crush === 'Y') { 
+        badgeCrush.innerText = '可磨粉'; 
+        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; 
+        badgeCrush.classList.remove('hidden'); 
+    }
+    else if(drug.can_crush === 'N') { 
+        badgeCrush.innerText = '不可磨粉'; 
+        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-red-300 bg-red-50 text-red-700'; 
+        badgeCrush.classList.remove('hidden'); 
+    }
+    else if(drug.can_crush === 'NA') { 
+        badgeCrush.innerText = '非磨粉劑型'; 
+        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-gray-300 bg-gray-50 text-gray-700'; 
+        badgeCrush.classList.remove('hidden'); 
+    }
+    else {
+        badgeCrush.classList.add('hidden');
+    }
 
     // 渲染關聯藥品
     const relContainer = document.getElementById('drug-related-container'), relList = document.getElementById('drug-related-list');
