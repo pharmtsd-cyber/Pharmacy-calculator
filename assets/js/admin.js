@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-cancel-anno').onclick = resetAnnouncementForm;
     document.getElementById('btn-save-drug').onclick = saveDrug;
     document.getElementById('btn-cancel-drug').onclick = resetDrugForm;
+
+    document.getElementById('btn-save-form').onclick = saveForm;
+    document.getElementById('btn-cancel-form').onclick = resetFormForm;
     
     // 公式編輯區按鈕
     document.getElementById('btn-show-add-formula').onclick = () => { resetFormulaForm(); document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
@@ -97,20 +100,21 @@ async function handleChangePassword() {
 
 async function loadAllData() {
     try {
-        STORE.categories = []; STORE.announcements = [];
-        const [drugsData, paramsData, formulasData, staffData, catData, annoData] = await Promise.all([
-            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getStaff'), fetchFromGAS('getCategories'), fetchFromGAS('getAnnouncements')
+        STORE.categories = []; STORE.announcements = []; STORE.forms = [];
+        const [drugsData, paramsData, formulasData, staffData, catData, annoData, formData] = await Promise.all([
+            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getStaff'), fetchFromGAS('getCategories'), fetchFromGAS('getAnnouncements'), fetchFromGAS('getForms')
         ]);
         if(drugsData) STORE.drugs = drugsData; if(paramsData) STORE.parameters = paramsData;
         if(formulasData) STORE.formulas = formulasData; if(staffData) STORE.staff = staffData;
         if(catData) STORE.categories = catData; if(annoData) STORE.announcements = annoData;
+        if(formData) STORE.forms = formData;
         
         document.getElementById('stat-drugs').innerText = STORE.drugs.length;
         document.getElementById('stat-formulas').innerText = STORE.formulas.length;
         document.getElementById('stat-params').innerText = STORE.parameters.length;
         document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-        renderLists(); renderParameterPad(); setupDrugCategorySelects();
+        renderLists(); renderParameterPad(); setupDrugCategorySelects(); setupDrugDropdowns();
         if (CONTEXT_DRUG) renderLocalFormulas();
     } catch(e) { console.error(e); }
 }
@@ -159,6 +163,9 @@ function renderLists() {
                 <button onclick='editDrug(${JSON.stringify(d).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2" title="編輯藥品"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
             </td></tr>`).join('');
+
+    document.getElementById('list-forms').innerHTML = STORE.forms.map(f => `<tr><td>${f.form_name}</td>
+        <td><button onclick="editForm('${f.form_id}', '${f.form_name}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteForm', '${f.form_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 }
 
 // ==========================================
@@ -418,6 +425,7 @@ async function deleteRecord(action, id) {
     if(action==='deleteStaff') payload.emp_id = id; if(action==='deleteParameter') payload.param_code = id; if(action==='deleteDrug') payload.drug_id = id; if(action==='deleteFormula') payload.formula_id = id;
     if(action==='deleteCategory') payload.cat_id = id; if(action==='deleteAnnouncement') payload.announce_id = id;
     await sendPost(payload);
+    if(action==='deleteForm') payload.form_id = id;
 }
 
 // ==========================================
@@ -451,4 +459,33 @@ function runLiveTest() {
     try { if (fMin.trim()) resMin = Math.round(math.evaluate(fMin) * 100) / 100; } catch(e){}
     try { if (fMax.trim()) resMax = Math.round(math.evaluate(fMax) * 100) / 100; } catch(e){}
     document.getElementById('admin-test-result').innerText = (fMax.trim() && resMax !== '--') ? `${resMin} ~ ${resMax}` : `${resMin}`;
+}
+
+
+function setupDrugDropdowns() {
+    const fSel = document.getElementById('drug-form'), ofSel = document.getElementById('drug-other-forms'), rSel = document.getElementById('drug-related');
+    fSel.innerHTML = '<option value="">--請選擇--</option>'; ofSel.innerHTML = ''; rSel.innerHTML = '';
+    STORE.forms.forEach(f => {
+        fSel.add(new Option(f.form_name, f.form_name));
+        ofSel.add(new Option(f.form_name, f.form_name));
+    });
+    STORE.drugs.forEach(d => {
+        rSel.add(new Option(`${d.drug_code||''} ${d.local_name||d.generic_name}`.trim(), d.local_name||d.generic_name));
+    });
+}
+
+function editForm(id, name) {
+    document.getElementById('form-mode').value = 'edit'; document.getElementById('form-id').value = id;
+    document.getElementById('form-name').value = name;
+    document.getElementById('btn-save-form').innerText = "更新劑型"; document.getElementById('btn-cancel-form').classList.remove('hidden');
+}
+function resetFormForm() {
+    document.getElementById('form-mode').value = 'add'; document.getElementById('form-id').value = ''; document.getElementById('form-name').value = '';
+    document.getElementById('btn-save-form').innerText = "新增劑型"; document.getElementById('btn-cancel-form').classList.add('hidden');
+}
+async function saveForm() {
+    const name = document.getElementById('form-name').value.trim();
+    if(!name) return alert("名稱必填");
+    await sendPost({ action: 'saveForm', mode: document.getElementById('form-mode').value, form_id: document.getElementById('form-id').value, form_name: name });
+    resetFormForm();
 }
