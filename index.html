@@ -81,3 +81,35 @@
                     <span id="single-max-text"></span>
                     <span id="daily-max-text"></span>
                 </div>
+
+                <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4"></div>
+
+                <div class="mt-2 border-t pt-5 bg-blue-50/50 p-5 rounded-lg border border-blue-100 flex flex-col gap-4">
+                    <div>
+                        <span class="block text-xs font-bold text-gray-600 mb-1">系統計算建議區間：</span>
+                        <div class="flex items-baseline gap-2">
+                            <span id="result-value" class="text-3xl font-extrabold text-[#1B365D]">--</span>
+                            <span id="result-unit" class="text-sm font-bold text-gray-600"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-blue-200 pt-4">
+                        <label class="block text-xs font-bold text-blue-800 mb-1">
+                            <i class="fa-solid fa-user-doctor mr-1"></i>醫師開立處方劑量比對 (選填)
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="prescribed-dose" step="any" placeholder="輸入處方數字..." class="border border-blue-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] w-48 shadow-inner">
+                            <span class="text-sm font-bold text-gray-600 prescribed-unit-display"></span>
+                        </div>
+                        <div id="dose-eval-msg" class="text-sm font-bold mt-2 hidden flex items-center gap-1.5 p-2 rounded"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="./assets/js/config.js"></script>
+    <script src="./assets/js/api.js"></script>
+    <script src="./assets/js/calculator.js"></script>
+</body>
+</html>
