@@ -1,13 +1,15 @@
 let CURRENT_USER = null;
 let CONTEXT_DRUG = null;
-let ACTIVE_FORMULA_INPUT = 'admin-formula-min';
+let ACTIVE_FORMULA_INPUT = 'admin-formula-min'; // 追蹤目前游標在哪個公式框
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 綁定登入功能
     document.getElementById('btn-login').onclick = handleLogin;
     document.getElementById('btn-open-pw').onclick = () => document.getElementById('pw-modal').classList.remove('hidden');
     document.getElementById('btn-pw-cancel').onclick = () => document.getElementById('pw-modal').classList.add('hidden');
     document.getElementById('btn-pw-save').onclick = handleChangePassword;
 
+    // 綁定所有儲存與取消按鈕
     document.getElementById('btn-save-staff').onclick = saveStaff;
     document.getElementById('btn-save-param').onclick = saveParameter;
     document.getElementById('btn-cancel-param').onclick = resetParameterForm;
@@ -18,15 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-save-drug').onclick = saveDrug;
     document.getElementById('btn-cancel-drug').onclick = resetDrugForm;
     
+    // 公式編輯區按鈕
     document.getElementById('btn-show-add-formula').onclick = () => { resetFormulaForm(); document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
     document.getElementById('btn-close-formula-editor').onclick = () => document.getElementById('formula-editor-container').classList.add('hidden');
     document.getElementById('btn-save-formula').onclick = saveFormula;
 
+    // 綁定所有模糊篩選器
     document.getElementById('filter-staff').addEventListener('input', renderLists);
     document.getElementById('filter-params').addEventListener('input', renderLists);
     document.getElementById('filter-cats').addEventListener('input', renderLists);
     document.getElementById('filter-drugs').addEventListener('input', renderLists);
 
+    // 側邊導覽列切換
     const navItems = document.querySelectorAll('.nav-item');
     const tabContents = document.querySelectorAll('.tab-content');
     navItems.forEach(item => {
@@ -39,11 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 公式測試區動態綁定
     document.getElementById('admin-formula-min').addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-min');
     document.getElementById('admin-formula-max').addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-max');
     document.getElementById('admin-formula-min').addEventListener('input', generateTestInputs);
     document.getElementById('admin-formula-max').addEventListener('input', generateTestInputs);
 
+    // 公式符號面板
     document.querySelectorAll('.op-btn').forEach(btn => {
         btn.onclick = (e) => {
             const textarea = document.getElementById(ACTIVE_FORMULA_INPUT);
@@ -57,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// ==========================================
+// 系統驗證與資料載入
+// ==========================================
 async function handleLogin() {
     const id = document.getElementById('login-id').value.trim(), pw = document.getElementById('login-pw').value, msg = document.getElementById('login-msg');
     if(!id || !pw) return msg.innerText = "請輸入員編與密碼";
@@ -105,9 +115,15 @@ async function loadAllData() {
     } catch(e) { console.error(e); }
 }
 
+// ==========================================
+// 渲染各大清單
+// ==========================================
 function renderLists() {
-    const fStaff = document.getElementById('filter-staff').value.toLowerCase(), fParams = document.getElementById('filter-params').value.toLowerCase(), fDrugs = document.getElementById('filter-drugs').value.toLowerCase(), fCats = document.getElementById('filter-cats').value.toLowerCase();
-    
+    const fStaff = document.getElementById('filter-staff') ? document.getElementById('filter-staff').value.toLowerCase() : '';
+    const fParams = document.getElementById('filter-params') ? document.getElementById('filter-params').value.toLowerCase() : '';
+    const fDrugs = document.getElementById('filter-drugs') ? document.getElementById('filter-drugs').value.toLowerCase() : '';
+    const fCats = document.getElementById('filter-cats') ? document.getElementById('filter-cats').value.toLowerCase() : '';
+
     // 員工清單
     document.getElementById('list-staff').innerHTML = STORE.staff.filter(s => (s.name||'').toLowerCase().includes(fStaff) || String(s.emp_id).includes(fStaff))
         .map(s => `<tr><td>${s.emp_id}</td><td>${s.name}</td><td>${s.role}</td><td><span class="${s.status==='Y'?'text-green-600':'text-red-500'}">${s.status}</span></td>
@@ -119,14 +135,18 @@ function renderLists() {
             <td><button onclick='editParameter(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteParameter', '${p.param_code}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 
     // 分類清單
-    document.getElementById('list-categories').innerHTML = STORE.categories.filter(c => ((c.cat_1||'')+(c.cat_2||'')+(c.cat_3||'')).toLowerCase().includes(fCats))
-        .map(c => `<tr><td>${c.cat_1}</td><td>${c.cat_2||''}</td><td>${c.cat_3||''}</td>
-            <td><button onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteCategory', '${c.cat_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    if (document.getElementById('list-categories')) {
+        document.getElementById('list-categories').innerHTML = STORE.categories.filter(c => ((c.cat_1||'')+(c.cat_2||'')+(c.cat_3||'')).toLowerCase().includes(fCats))
+            .map(c => `<tr><td>${c.cat_1}</td><td>${c.cat_2||''}</td><td>${c.cat_3||''}</td>
+                <td><button onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteCategory', '${c.cat_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
 
     // 公告清單
-    document.getElementById('list-announcements').innerHTML = STORE.announcements.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => `<tr>
-            <td>${a.is_pinned==='Y' ? '<i class="fa-solid fa-star text-yellow-500"></i>' : ''}</td><td>${a.version}</td><td>${a.date ? new Date(a.date).toLocaleDateString() : ''}</td><td class="whitespace-pre-wrap">${a.content}</td>
-            <td><button onclick='editAnnouncement(${JSON.stringify(a).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteAnnouncement', '${a.announce_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    if (document.getElementById('list-announcements')) {
+        document.getElementById('list-announcements').innerHTML = STORE.announcements.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => `<tr>
+                <td>${a.is_pinned==='Y' ? '<i class="fa-solid fa-star text-yellow-500"></i>' : ''}</td><td>${a.version}</td><td>${a.date ? new Date(a.date).toLocaleDateString() : ''}</td><td class="whitespace-pre-wrap">${a.content}</td>
+                <td><button onclick='editAnnouncement(${JSON.stringify(a).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteAnnouncement', '${a.announce_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
 
     // 藥品清單
     document.getElementById('list-drugs').innerHTML = STORE.drugs.filter(d => ((d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase().includes(fDrugs))
@@ -141,9 +161,12 @@ function renderLists() {
             </td></tr>`).join('');
 }
 
-// 聯動藥品分類的下拉選單
+// ==========================================
+// 藥品分類聯動下拉選單
+// ==========================================
 function setupDrugCategorySelects() {
     const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
+    if(!c1) return;
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     c1.innerHTML = '<option value="">--請選擇--</option>'; cat1s.forEach(c => c1.add(new Option(c, c)));
     c1.onchange = () => {
@@ -151,45 +174,48 @@ function setupDrugCategorySelects() {
         if (c1.value) {
             const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value).map(c => c.cat_2).filter(Boolean))];
             cat2s.forEach(c => c2.add(new Option(c, c))); c2.disabled = false;
-        } else c2.disabled = true; c3.disabled = true;
+        } else { c2.disabled = true; }
+        c3.disabled = true;
     };
     c2.onchange = () => {
         c3.innerHTML = '<option value="">--請選擇--</option>';
         if (c2.value) {
             const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value && c.cat_2 === c2.value).map(c => c.cat_3).filter(Boolean))];
             cat3s.forEach(c => c3.add(new Option(c, c))); c3.disabled = false;
-        } else c3.disabled = true;
+        } else { c3.disabled = true; }
     };
 }
 
-// CRUD - 公告
+// ==========================================
+// 各項 CRUD: 公告、分類、員工、參數
+// ==========================================
 function editAnnouncement(a) {
     document.getElementById('anno-mode').value = 'edit'; document.getElementById('anno-id').value = a.announce_id;
-    document.getElementById('anno-version').value = a.version; 
+    document.getElementById('anno-version').value = a.version || ''; 
     document.getElementById('anno-date').value = a.date ? new Date(a.date).toISOString().split('T')[0] : '';
-    document.getElementById('anno-pinned').value = a.is_pinned; document.getElementById('anno-content').value = a.content;
+    document.getElementById('anno-pinned').value = a.is_pinned || 'N'; 
+    document.getElementById('anno-content').value = a.content || '';
     document.getElementById('btn-save-anno').innerText = "更新公告"; document.getElementById('btn-cancel-anno').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function resetAnnouncementForm() {
     document.getElementById('anno-mode').value = 'add'; document.getElementById('anno-id').value = '';
-    ['version', 'date', 'content'].forEach(id => document.getElementById('anno-'+id).value = ''); document.getElementById('anno-pinned').value = 'N';
+    document.getElementById('anno-version').value = ''; document.getElementById('anno-date').value = ''; document.getElementById('anno-content').value = ''; document.getElementById('anno-pinned').value = 'N';
     document.getElementById('btn-save-anno').innerText = "新增公告"; document.getElementById('btn-cancel-anno').classList.add('hidden');
 }
 async function saveAnnouncement() {
-    const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value, date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value };
+    const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value.trim(), date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value.trim() };
     if(!payload.version || !payload.date || !payload.content) return alert("必填不可空白");
     await sendPost(payload); resetAnnouncementForm();
 }
 
-// CRUD - 分類
 function editCategory(c) {
     document.getElementById('cat-mode').value = 'edit'; document.getElementById('cat-id').value = c.cat_id;
-    document.getElementById('cat-level1').value = c.cat_1; document.getElementById('cat-level2').value = c.cat_2 || ''; document.getElementById('cat-level3').value = c.cat_3 || '';
+    document.getElementById('cat-level1').value = c.cat_1 || ''; document.getElementById('cat-level2').value = c.cat_2 || ''; document.getElementById('cat-level3').value = c.cat_3 || '';
     document.getElementById('btn-save-cat').innerText = "更新分類"; document.getElementById('btn-cancel-cat').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function resetCategoryForm() {
     document.getElementById('cat-mode').value = 'add'; document.getElementById('cat-id').value = '';
-    ['level1', 'level2', 'level3'].forEach(id => document.getElementById('cat-'+id).value = '');
+    document.getElementById('cat-level1').value = ''; document.getElementById('cat-level2').value = ''; document.getElementById('cat-level3').value = '';
     document.getElementById('btn-save-cat').innerText = "新增分類組合"; document.getElementById('btn-cancel-cat').classList.add('hidden');
 }
 async function saveCategory() {
@@ -198,10 +224,9 @@ async function saveCategory() {
     await sendPost(payload); resetCategoryForm();
 }
 
-// CRUD - 參數
 function editParameter(p) {
     document.getElementById('param-mode').value = 'edit'; document.getElementById('param-code').value = p.param_code; document.getElementById('param-code').disabled = true;
-    document.getElementById('param-name').value = p.param_name; document.getElementById('param-unit').value = p.default_unit;
+    document.getElementById('param-name').value = p.param_name || ''; document.getElementById('param-unit').value = p.default_unit || '';
     document.getElementById('btn-save-param').innerText = "更新參數"; document.getElementById('btn-cancel-param').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function resetParameterForm() {
@@ -213,32 +238,7 @@ async function saveParameter() {
     const mode = document.getElementById('param-mode').value, code = document.getElementById('param-code').value.trim(), name = document.getElementById('param-name').value.trim();
     if(!code || !name) return alert("必填"); if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
     if(mode === 'add' && STORE.parameters.some(p => p.param_code === code)) return alert("代碼已存在");
-    await sendPost({ action: 'saveParameter', mode: mode, param_code: code, param_name: name, default_unit: document.getElementById('param-unit').value }); resetParameterForm();
-}
-
-// CRUD - 藥品
-function editDrug(d) {
-    document.getElementById('drug-mode').value = 'edit'; document.getElementById('drug-id').value = d.drug_id;
-    // 為了觸發下拉聯動，要依序給值並發送 change 事件
-    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
-    c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change'));
-    c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change'));
-    c3.value = d.cat_3 || '';
-    
-    ['local','brand','common-brand','generic','ingred','dose-inst','url','form','other-forms'].forEach(id => document.getElementById(`drug-${id}`).value = d[id.replace('-','_')+'_name'] || d[id.replace('-','_')] || '');
-    document.getElementById('drug-status').value = d.status; document.getElementById('btn-save-drug').innerText = "更新儲存"; document.getElementById('btn-cancel-drug').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function resetDrugForm() {
-    document.getElementById('drug-mode').value = 'add'; document.getElementById('drug-id').value = '';
-    ['cat1','cat2','cat3'].forEach(id => { const el = document.getElementById(`drug-${id}`); el.value = ''; if(id!=='cat1') el.disabled = true; });
-    ['local','brand','common-brand','generic','ingred','dose-inst','url','form','other-forms'].forEach(id => document.getElementById(`drug-${id}`).value = '');
-    document.getElementById('btn-save-drug').innerText = "儲存藥品"; document.getElementById('btn-cancel-drug').classList.add('hidden');
-}
-async function saveDrug() {
-    const p = { action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, status: document.getElementById('drug-status').value };
-    ['cat1','cat2','cat3','local','brand','common-brand','generic','ingred','dose-inst','url','form','other-forms'].forEach(id => p[id.replace('-','_') + (id.includes('brand')||id==='local'||id==='generic'?'_name':'')] = document.getElementById(`drug-${id}`).value);
-    if(!p.cat_1 || !p.local_name || !p.generic_name) return alert("必填欄位空白");
-    await sendPost(p); resetDrugForm();
+    await sendPost({ action: 'saveParameter', mode: mode, param_code: code, param_name: name, default_unit: document.getElementById('param-unit').value.trim() }); resetParameterForm();
 }
 
 async function saveStaff() {
@@ -249,7 +249,91 @@ async function saveStaff() {
     document.getElementById('staff-id').value = ''; document.getElementById('staff-name').value = '';
 }
 
-// CRUD - 公式主從架構
+// ==========================================
+// 重大修正：明確抓取藥品欄位，保護所有特殊符號
+// ==========================================
+function editDrug(d) {
+    document.getElementById('drug-mode').value = 'edit'; 
+    document.getElementById('drug-id').value = d.drug_id;
+    
+    // 分類聯動還原
+    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
+    c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change'));
+    c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change'));
+    c3.value = d.cat_3 || '';
+    
+    // 明確賦值，避免 undefined 錯誤
+    document.getElementById('drug-local').value = d.local_name || '';
+    document.getElementById('drug-brand').value = d.brand_name || '';
+    document.getElementById('drug-common-brand').value = d.common_brand || '';
+    document.getElementById('drug-generic').value = d.generic_name || '';
+    document.getElementById('drug-form').value = d.form || '';
+    document.getElementById('drug-other-forms').value = d.other_forms || '';
+    document.getElementById('drug-ingred').value = d.ingredients || '';
+    document.getElementById('drug-dose-inst').value = d.dose_instruction || '';
+    document.getElementById('drug-url').value = d.reference_url || '';
+    document.getElementById('drug-status').value = d.status || 'Y';
+    
+    document.getElementById('btn-save-drug').innerText = "更新儲存"; 
+    document.getElementById('btn-cancel-drug').classList.remove('hidden'); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetDrugForm() {
+    document.getElementById('drug-mode').value = 'add'; 
+    document.getElementById('drug-id').value = '';
+    
+    document.getElementById('drug-cat1').value = ''; 
+    document.getElementById('drug-cat2').value = ''; document.getElementById('drug-cat2').disabled = true;
+    document.getElementById('drug-cat3').value = ''; document.getElementById('drug-cat3').disabled = true;
+    
+    document.getElementById('drug-local').value = '';
+    document.getElementById('drug-brand').value = '';
+    document.getElementById('drug-common-brand').value = '';
+    document.getElementById('drug-generic').value = '';
+    document.getElementById('drug-form').value = '';
+    document.getElementById('drug-other-forms').value = '';
+    document.getElementById('drug-ingred').value = '';
+    document.getElementById('drug-dose-inst').value = '';
+    document.getElementById('drug-url').value = '';
+    document.getElementById('drug-status').value = 'Y';
+    
+    document.getElementById('btn-save-drug').innerText = "儲存藥品"; 
+    document.getElementById('btn-cancel-drug').classList.add('hidden');
+}
+
+async function saveDrug() {
+    // 明確建構 payload，確保符號與空格不遺失，且不會漏抓資料
+    const payload = {
+        action: 'saveDrug',
+        mode: document.getElementById('drug-mode').value,
+        drug_id: document.getElementById('drug-id').value,
+        cat_1: document.getElementById('drug-cat1').value,
+        cat_2: document.getElementById('drug-cat2').value,
+        cat_3: document.getElementById('drug-cat3').value,
+        local_name: document.getElementById('drug-local').value.trim(),
+        brand_name: document.getElementById('drug-brand').value.trim(),
+        common_brand: document.getElementById('drug-common-brand').value.trim(),
+        generic_name: document.getElementById('drug-generic').value.trim(),
+        form: document.getElementById('drug-form').value.trim(),
+        other_forms: document.getElementById('drug-other-forms').value.trim(),
+        ingredients: document.getElementById('drug-ingred').value.trim(),
+        dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
+        reference_url: document.getElementById('drug-url').value.trim(),
+        status: document.getElementById('drug-status').value
+    };
+
+    if(!payload.cat_1 || !payload.local_name || !payload.generic_name) {
+        return alert("請確認【第一層分類】、【中文名稱】與【一般名稱 (原學名)】皆已填寫！");
+    }
+    
+    await sendPost(payload); 
+    resetDrugForm();
+}
+
+// ==========================================
+// 藥品專屬公式管理 (Master-Detail)
+// ==========================================
 function openFormulaManager(drugId) {
     CONTEXT_DRUG = STORE.drugs.find(d => d.drug_id === drugId);
     if (!CONTEXT_DRUG) return;
@@ -277,12 +361,20 @@ function renderLocalFormulas() {
 
 function editFormula(f) {
     document.getElementById('formula-mode').value = 'edit'; document.getElementById('formula-id').value = f.formula_id; 
-    document.getElementById('admin-formula-name').value = f.formula_name; document.getElementById('admin-result-unit').value = f.result_unit; document.getElementById('admin-remark').value = f.remark || '';
-    document.getElementById('formula-single-max').value = f.single_max||''; document.getElementById('formula-single-unit').value = f.single_max_unit||''; document.getElementById('formula-daily-max').value = f.daily_max||''; document.getElementById('formula-daily-unit').value = f.daily_max_unit||'';
-    document.getElementById('admin-formula-min').value = f.formula_min||''; document.getElementById('admin-formula-max').value = f.formula_max||'';
+    document.getElementById('admin-formula-name').value = f.formula_name || ''; 
+    document.getElementById('admin-result-unit').value = f.result_unit || ''; 
+    document.getElementById('admin-remark').value = f.remark || '';
+    document.getElementById('formula-single-max').value = f.single_max || ''; 
+    document.getElementById('formula-single-unit').value = f.single_max_unit || ''; 
+    document.getElementById('formula-daily-max').value = f.daily_max || ''; 
+    document.getElementById('formula-daily-unit').value = f.daily_max_unit || '';
+    document.getElementById('admin-formula-min').value = f.formula_min || ''; 
+    document.getElementById('admin-formula-max').value = f.formula_max || '';
     generateTestInputs();
     document.getElementById('formula-editor-title').innerText = "編輯公式：" + f.formula_name;
-    document.getElementById('btn-save-formula').innerText = "更新儲存區間"; document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    document.getElementById('btn-save-formula').innerText = "更新儲存區間"; 
+    document.getElementById('formula-editor-container').classList.remove('hidden'); 
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 function resetFormulaForm() {
     document.getElementById('formula-mode').value = 'add'; document.getElementById('formula-id').value = '';
@@ -294,18 +386,30 @@ async function saveFormula() {
     if (!CONTEXT_DRUG) return alert("發生錯誤：遺失藥品關聯綁定。");
     const payload = {
         action: 'saveFormula', mode: document.getElementById('formula-mode').value, formula_id: document.getElementById('formula-id').value, drug_id: CONTEXT_DRUG.drug_id,
-        formula_name: document.getElementById('admin-formula-name').value, formula_min: document.getElementById('admin-formula-min').value, formula_max: document.getElementById('admin-formula-max').value, result_unit: document.getElementById('admin-result-unit').value,
-        single_max: document.getElementById('formula-single-max').value, single_max_unit: document.getElementById('formula-single-unit').value, daily_max: document.getElementById('formula-daily-max').value, daily_max_unit: document.getElementById('formula-daily-unit').value, remark: document.getElementById('admin-remark').value
+        formula_name: document.getElementById('admin-formula-name').value.trim(), formula_min: document.getElementById('admin-formula-min').value.trim(), formula_max: document.getElementById('admin-formula-max').value.trim(), result_unit: document.getElementById('admin-result-unit').value.trim(),
+        single_max: document.getElementById('formula-single-max').value, single_max_unit: document.getElementById('formula-single-unit').value.trim(), daily_max: document.getElementById('formula-daily-max').value, daily_max_unit: document.getElementById('formula-daily-unit').value.trim(), remark: document.getElementById('admin-remark').value.trim()
     };
     if(!payload.formula_name || !payload.formula_min) return alert("方法名稱與下限公式必填");
     await sendPost(payload); resetFormulaForm(); document.getElementById('formula-editor-container').classList.add('hidden');
 }
 
-// 共用工具
+// ==========================================
+// 共用底層 (保護特殊字元編碼)
+// ==========================================
 async function sendPost(payload) {
-    const res = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-    const result = await res.json();
-    if(result.status === 'success') { alert("操作成功！"); loadAllData(); } else { alert("失敗：" + result.message); }
+    try {
+        const res = await fetch(CONFIG.GAS_API_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 強制保護中文字與奇怪符號
+            body: JSON.stringify(payload) 
+        });
+        const result = await res.json();
+        if(result.status === 'success') { alert("操作成功！"); loadAllData(); } 
+        else { alert("失敗：" + result.message); }
+    } catch (error) {
+        console.error(error);
+        alert("網路連線錯誤，無法儲存。");
+    }
 }
 async function deleteRecord(action, id) {
     if (action === 'deleteStaff' && id === '93397') return alert("不可刪除程式管理員！");
@@ -315,6 +419,10 @@ async function deleteRecord(action, id) {
     if(action==='deleteCategory') payload.cat_id = id; if(action==='deleteAnnouncement') payload.announce_id = id;
     await sendPost(payload);
 }
+
+// ==========================================
+// 雙公式動態測試邏輯
+// ==========================================
 function renderParameterPad() {
     document.getElementById('admin-param-pad').innerHTML = STORE.parameters.map(p => `<button type="button" class="text-xs bg-[#1B365D] text-white px-2 py-1 rounded hover:bg-blue-800" onclick="const ta=document.getElementById(ACTIVE_FORMULA_INPUT); ta.value = ta.value.substring(0, ta.selectionStart) + '{${p.param_code}}' + ta.value.substring(ta.selectionEnd); generateTestInputs();">${p.param_name}</button>`).join('');
 }
