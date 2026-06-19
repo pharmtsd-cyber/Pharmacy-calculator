@@ -305,48 +305,96 @@ async function saveForm() {
     await sendPost({ action: 'saveForm', mode: document.getElementById('form-mode').value, form_id: document.getElementById('form-id').value, form_name: name }); resetFormForm();
 }
 
-function editDrug(d) {
-    document.getElementById('drug-mode').value = 'edit'; document.getElementById('drug-id').value = d.drug_id;
-    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
-    c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change')); c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change')); c3.value = d.cat_3 || '';
-    
-    ['local','brand','common-brand','generic','ingred','dose-inst','url','code'].forEach(id => document.getElementById(`drug-${id}`).value = d[id.replace('-','_')+'_name'] || d[id.replace('-','_')] || '');
-    document.getElementById('drug-status').value = d.status; document.getElementById('drug-can-crush').value = d.can_crush || ''; document.getElementById('drug-form').value = d.form || '';
-    
-    // 渲染多選標籤
-    stateTags.otherForms = d.other_forms ? d.other_forms.split(',').filter(Boolean) : [];
-    stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
-    renderTagsUI('otherForms'); renderTagsUI('relatedDrugs');
+function editDrug(drugId) {
+    const d = STORE.drugs.find(x => x.drug_id === drugId);
+    if(!d) return;
 
-    document.getElementById('btn-save-drug').innerText = "更新儲存"; document.getElementById('btn-cancel-drug').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('drug-mode').value = 'edit'; 
+    document.getElementById('drug-id').value = d.drug_id;
+    
+    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
+    c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change')); 
+    c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change')); 
+    c3.value = d.cat_3 || '';
+    
+    document.getElementById('drug-local').value = d.local_name || '';
+    document.getElementById('drug-brand').value = d.brand_name || '';
+    document.getElementById('drug-common-brand').value = d.common_brand || '';
+    document.getElementById('drug-generic').value = d.generic_name || '';
+    document.getElementById('drug-ingred').value = d.ingredients || '';
+    document.getElementById('drug-dose-inst').value = d.dose_instruction || '';
+    document.getElementById('drug-url').value = d.reference_url || '';
+    document.getElementById('drug-code').value = d.drug_code || '';
+    document.getElementById('drug-status').value = d.status || 'Y';
+    document.getElementById('drug-can-crush').value = d.can_crush || '';
+    document.getElementById('drug-form').value = d.form || '';
+    
+    // 移除 otherForms 邏輯，僅保留關聯藥品
+    stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
+    renderTagsUI('relatedDrugs');
+
+    document.getElementById('btn-save-drug').innerText = "更新儲存"; 
+    document.getElementById('btn-cancel-drug').classList.remove('hidden'); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function resetDrugForm() {
-    document.getElementById('drug-mode').value = 'add'; document.getElementById('drug-id').value = '';
-    ['cat1','cat2','cat3'].forEach(id => { const el = document.getElementById(`drug-${id}`); el.value = ''; if(id!=='cat1') el.disabled = true; });
-    ['local','brand','common-brand','generic','ingred','dose-inst','url','code','can-crush','form'].forEach(id => document.getElementById(`drug-${id}`).value = '');
+    document.getElementById('drug-mode').value = 'add'; 
+    document.getElementById('drug-id').value = '';
     
-    stateTags.otherForms = []; stateTags.relatedDrugs = [];
-    renderTagsUI('otherForms'); renderTagsUI('relatedDrugs');
-    document.getElementById('input-otherForms').value = ''; document.getElementById('input-relatedDrugs').value = '';
+    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
+    c1.value = ''; c2.value = ''; c3.value = '';
+    c2.disabled = true; c3.disabled = true;
 
-    document.getElementById('btn-save-drug').innerText = "儲存藥品"; document.getElementById('btn-cancel-drug').classList.add('hidden');
+    document.getElementById('drug-local').value = '';
+    document.getElementById('drug-brand').value = '';
+    document.getElementById('drug-common-brand').value = '';
+    document.getElementById('drug-generic').value = '';
+    document.getElementById('drug-ingred').value = '';
+    document.getElementById('drug-dose-inst').value = '';
+    document.getElementById('drug-url').value = '';
+    document.getElementById('drug-code').value = '';
+    document.getElementById('drug-status').value = 'Y';
+    document.getElementById('drug-can-crush').value = '';
+    document.getElementById('drug-form').value = '';
+    
+    stateTags.relatedDrugs = [];
+    renderTagsUI('relatedDrugs');
+    document.getElementById('input-relatedDrugs').value = '';
+
+    document.getElementById('btn-save-drug').innerText = "儲存藥品"; 
+    document.getElementById('btn-cancel-drug').classList.add('hidden');
 }
 
 async function saveDrug() {
-    const p = { 
-        action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, status: document.getElementById('drug-status').value,
-        can_crush: document.getElementById('drug-can-crush').value, drug_code: document.getElementById('drug-code').value,
-        other_forms: stateTags.otherForms.join(','), related_drugs: stateTags.relatedDrugs.join(',')
+    const payload = { 
+        action: 'saveDrug', 
+        mode: document.getElementById('drug-mode').value, 
+        drug_id: document.getElementById('drug-id').value, 
+        status: document.getElementById('drug-status').value,
+        cat_1: document.getElementById('drug-cat1').value,
+        cat_2: document.getElementById('drug-cat2').value,
+        cat_3: document.getElementById('drug-cat3').value,
+        local_name: document.getElementById('drug-local').value.trim(),
+        brand_name: document.getElementById('drug-brand').value.trim(),
+        common_brand: document.getElementById('drug-common-brand').value.trim(),
+        generic_name: document.getElementById('drug-generic').value.trim(),
+        ingredients: document.getElementById('drug-ingred').value.trim(),
+        dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
+        reference_url: document.getElementById('drug-url').value.trim(),
+        drug_code: document.getElementById('drug-code').value.trim(),
+        can_crush: document.getElementById('drug-can-crush').value,
+        form: document.getElementById('drug-form').value,
+        related_drugs: stateTags.relatedDrugs.join(',') // 已無 other_forms
     };
-    ['cat1','cat2','cat3','local','brand','common-brand','generic','ingred','dose-inst','url','form'].forEach(id => p[id.replace('-','_') + (id.includes('brand')||id==='local'||id==='generic'?'_name':'')] = document.getElementById(`drug-${id}`).value);
     
-    // 【修改處】更新必填欄位的判斷邏輯
-    if(!p.cat_1 || !p.drug_code || !p.generic_name || !p.can_crush || !p.form) {
-        return alert("請填寫所有帶有 * 號的必填欄位！\n(第一層分類、藥品代碼、一般名稱、是否可磨粉、主要劑型)");
+    // 必填防呆：只鎖藥品代碼與一般名稱
+    if(!payload.drug_code || !payload.generic_name) {
+        return alert("請務必填寫：【藥品代碼】與【一般名稱(原學名)】！");
     }
     
-    await sendPost(p); resetDrugForm();
+    await sendPost(payload); 
+    resetDrugForm();
 }
 
 async function saveStaff() {
