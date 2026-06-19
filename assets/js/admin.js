@@ -352,13 +352,13 @@ function editDrug(drugId) {
     document.getElementById('drug-generic').value = d.generic_name || '';
     document.getElementById('drug-ingred').value = d.ingredients || '';
     document.getElementById('drug-dose-inst').value = d.dose_instruction || '';
+    document.getElementById('drug-supplemental').value = d.supplemental_info || ''; // 新增讀取
     document.getElementById('drug-url').value = d.reference_url || '';
     document.getElementById('drug-code').value = d.drug_code || '';
     document.getElementById('drug-status').value = d.status || 'Y';
     document.getElementById('drug-can-crush').value = d.can_crush || '';
     document.getElementById('drug-form').value = d.form || '';
     
-    // 移除 otherForms 邏輯，僅保留關聯藥品
     stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
     renderTagsUI('relatedDrugs');
 
@@ -381,6 +381,7 @@ function resetDrugForm() {
     document.getElementById('drug-generic').value = '';
     document.getElementById('drug-ingred').value = '';
     document.getElementById('drug-dose-inst').value = '';
+    document.getElementById('drug-supplemental').value = ''; // 新增清空
     document.getElementById('drug-url').value = '';
     document.getElementById('drug-code').value = '';
     document.getElementById('drug-status').value = 'Y';
@@ -410,11 +411,12 @@ async function saveDrug() {
         generic_name: document.getElementById('drug-generic').value.trim(),
         ingredients: document.getElementById('drug-ingred').value.trim(),
         dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
+        supplemental_info: document.getElementById('drug-supplemental').value.trim(), // 新增儲存
         reference_url: document.getElementById('drug-url').value.trim(),
         drug_code: document.getElementById('drug-code').value.trim(),
         can_crush: document.getElementById('drug-can-crush').value,
         form: document.getElementById('drug-form').value,
-        related_drugs: stateTags.relatedDrugs.join(',') // 已無 other_forms
+        related_drugs: stateTags.relatedDrugs.join(',')
     };
     
     // 必填防呆：只鎖藥品代碼與一般名稱
