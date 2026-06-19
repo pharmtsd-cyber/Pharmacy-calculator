@@ -111,26 +111,35 @@ async function loadAllData() {
 }
 
 function renderLists() {
-    const fStaff = document.getElementById('filter-staff').value.toLowerCase(), fParams = document.getElementById('filter-params').value.toLowerCase(), fDrugs = document.getElementById('filter-drugs').value.toLowerCase(), fCats = document.getElementById('filter-cats').value.toLowerCase();
-    
+    const fStaff = document.getElementById('filter-staff').value.toLowerCase();
+    const fParams = document.getElementById('filter-params').value.toLowerCase();
+    const fDrugs = document.getElementById('filter-drugs').value.toLowerCase();
+    const fCats = document.getElementById('filter-cats') ? document.getElementById('filter-cats').value.toLowerCase() : '';
+
     document.getElementById('list-staff').innerHTML = STORE.staff.filter(s => (s.name||'').toLowerCase().includes(fStaff) || String(s.emp_id).includes(fStaff))
         .map(s => `<tr><td>${s.emp_id}</td><td>${s.name}</td><td>${s.role}</td><td><span class="${s.status==='Y'?'text-green-600':'text-red-500'}">${s.status}</span></td>
             <td>${(CURRENT_USER.role === 'Admin' || CURRENT_USER.role === 'Programmer') ? `<button onclick="deleteRecord('deleteStaff', '${s.emp_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`).join('');
 
     document.getElementById('list-params').innerHTML = STORE.parameters.filter(p => (p.param_code||'').toLowerCase().includes(fParams) || (p.param_name||'').toLowerCase().includes(fParams))
         .map(p => `<tr><td>${p.param_code}</td><td>${p.param_name}</td><td>${p.default_unit}</td>
-            <td><button onclick='editParameter(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteParameter', '${p.param_code}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            <td><button onclick="editParameter('${p.param_code}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteParameter', '${p.param_code}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 
-    document.getElementById('list-categories').innerHTML = STORE.categories.filter(c => ((c.cat_1||'')+(c.cat_2||'')+(c.cat_3||'')).toLowerCase().includes(fCats))
-        .map(c => `<tr><td>${c.cat_1}</td><td>${c.cat_2||''}</td><td>${c.cat_3||''}</td>
-            <td><button onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteCategory', '${c.cat_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    if (document.getElementById('list-categories')) {
+        document.getElementById('list-categories').innerHTML = STORE.categories.filter(c => ((c.cat_1||'')+(c.cat_2||'')+(c.cat_3||'')).toLowerCase().includes(fCats))
+            .map(c => `<tr><td>${c.cat_1}</td><td>${c.cat_2||''}</td><td>${c.cat_3||''}</td>
+                <td><button onclick="editCategory('${c.cat_id}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteCategory', '${c.cat_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
 
-    document.getElementById('list-announcements').innerHTML = STORE.announcements.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => `<tr>
-            <td>${a.is_pinned==='Y' ? '<i class="fa-solid fa-star text-yellow-500"></i>' : ''}</td><td>${a.version}</td><td>${a.date ? new Date(a.date).toLocaleDateString() : ''}</td><td class="whitespace-pre-wrap">${a.content}</td>
-            <td><button onclick='editAnnouncement(${JSON.stringify(a).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteAnnouncement', '${a.announce_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    if (document.getElementById('list-announcements')) {
+        document.getElementById('list-announcements').innerHTML = STORE.announcements.sort((a,b) => new Date(b.date) - new Date(a.date)).map(a => `<tr>
+                <td>${a.is_pinned==='Y' ? '<i class="fa-solid fa-star text-yellow-500"></i>' : ''}</td><td>${a.version}</td><td>${a.date ? new Date(a.date).toLocaleDateString() : ''}</td><td class="whitespace-pre-wrap">${a.content}</td>
+                <td><button onclick="editAnnouncement('${a.announce_id}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteAnnouncement', '${a.announce_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
 
-    document.getElementById('list-forms').innerHTML = STORE.forms.map(f => `<tr><td>${f.form_name}</td>
-        <td><button onclick="editForm('${f.form_id}', '${f.form_name}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteForm', '${f.form_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    if (document.getElementById('list-forms')) {
+        document.getElementById('list-forms').innerHTML = STORE.forms.map(f => `<tr><td>${f.form_name}</td>
+            <td><button onclick="editForm('${f.form_id}', '${f.form_name}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteForm', '${f.form_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+    }
 
     document.getElementById('list-drugs').innerHTML = STORE.drugs.filter(d => ((d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase().includes(fDrugs))
         .map(d => `<tr>
@@ -139,9 +148,23 @@ function renderLists() {
             <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
             <td>
                 <button onclick="openFormulaManager('${d.drug_id}')" class="text-purple-600 hover:text-purple-800 mr-3 font-bold text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200" title="管理專屬公式"><i class="fa-solid fa-flask"></i> 公式 (${STORE.formulas.filter(f => f.drug_id === d.drug_id).length})</button>
-                <button onclick='editDrug(${JSON.stringify(d).replace(/'/g, "&#39;")})' class="text-blue-500 hover:text-blue-700 mr-2" title="編輯藥品"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="editDrug('${d.drug_id}')" class="text-blue-500 hover:text-blue-700 mr-2" title="編輯藥品"><i class="fa-solid fa-pen"></i></button>
                 <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
             </td></tr>`).join('');
+}
+
+function renderLocalFormulas() {
+    if (!CONTEXT_DRUG) return;
+    const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id);
+    document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
+        ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
+        : localFormulas.map(f => `
+            <tr class="cursor-pointer hover:bg-blue-50 transition" onclick="editFormula('${f.formula_id}')">
+                <td class="font-bold text-blue-900"><i class="fa-solid fa-pen text-xs text-gray-300 mr-1"></i> ${f.formula_name}</td>
+                <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                <td onclick="event.stopPropagation()"><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`).join('');
 }
 
 function setupDrugCategorySelects() {
@@ -241,7 +264,9 @@ function setupDrugDropdowns() {
 // CRUD: 各項儲存與編輯邏輯
 // ==========================================
 
-function editAnnouncement(a) {
+function editAnnouncement(id) {
+    const a = STORE.announcements.find(x => x.announce_id === id);
+    if(!a) return;
     document.getElementById('anno-mode').value = 'edit'; document.getElementById('anno-id').value = a.announce_id;
     document.getElementById('anno-version').value = a.version; document.getElementById('anno-date').value = a.date ? new Date(a.date).toISOString().split('T')[0] : '';
     document.getElementById('anno-pinned').value = a.is_pinned; document.getElementById('anno-content').value = a.content;
@@ -258,7 +283,9 @@ async function saveAnnouncement() {
     await sendPost(payload); resetAnnouncementForm();
 }
 
-function editCategory(c) {
+function editCategory(id) {
+    const c = STORE.categories.find(x => x.cat_id === id);
+    if(!c) return;
     document.getElementById('cat-mode').value = 'edit'; document.getElementById('cat-id').value = c.cat_id;
     document.getElementById('cat-level1').value = c.cat_1; document.getElementById('cat-level2').value = c.cat_2 || ''; document.getElementById('cat-level3').value = c.cat_3 || '';
     document.getElementById('btn-save-cat').innerText = "更新分類"; document.getElementById('btn-cancel-cat').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -274,7 +301,9 @@ async function saveCategory() {
     await sendPost(payload); resetCategoryForm();
 }
 
-function editParameter(p) {
+function editParameter(code) {
+    const p = STORE.parameters.find(x => x.param_code === code);
+    if(!p) return;
     document.getElementById('param-mode').value = 'edit'; document.getElementById('param-code').value = p.param_code; document.getElementById('param-code').disabled = true;
     document.getElementById('param-name').value = p.param_name; document.getElementById('param-unit').value = p.default_unit;
     document.getElementById('btn-save-param').innerText = "更新參數"; document.getElementById('btn-cancel-param').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -430,14 +459,19 @@ function renderLocalFormulas() {
             </tr>`).join('');
 }
 
-function editFormula(f) {
+function editFormula(id) {
+    const f = STORE.formulas.find(x => x.formula_id === id);
+    if(!f) return;
     document.getElementById('formula-mode').value = 'edit'; document.getElementById('formula-id').value = f.formula_id; 
     document.getElementById('admin-formula-name').value = f.formula_name; document.getElementById('admin-result-unit').value = f.result_unit; document.getElementById('admin-remark').value = f.remark || '';
     document.getElementById('formula-single-max').value = f.single_max||''; document.getElementById('formula-single-unit').value = f.single_max_unit||''; document.getElementById('formula-daily-max').value = f.daily_max||''; document.getElementById('formula-daily-unit').value = f.daily_max_unit||'';
     document.getElementById('admin-formula-min').value = f.formula_min||''; document.getElementById('admin-formula-max').value = f.formula_max||'';
     generateTestInputs();
+    
     document.getElementById('formula-editor-title').innerText = "編輯公式：" + f.formula_name;
-    document.getElementById('btn-save-formula').innerText = "更新儲存區間"; document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    document.getElementById('btn-save-formula').innerText = "更新儲存區間"; 
+    document.getElementById('formula-editor-container').classList.remove('hidden'); 
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 function resetFormulaForm() {
     document.getElementById('formula-mode').value = 'add'; document.getElementById('formula-id').value = '';
