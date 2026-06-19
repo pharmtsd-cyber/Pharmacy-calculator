@@ -144,7 +144,7 @@ function selectDrug(drug) {
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
     
-// 渲染代碼與磨粉 Badge
+    // 渲染代碼與磨粉 Badge
     const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
     if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
     if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
@@ -185,6 +185,18 @@ function selectDrug(drug) {
         document.getElementById('drug-dose-inst').innerText = drug.dose_instruction;
         instContainer.classList.remove('hidden');
     } else instContainer.classList.add('hidden');
+
+    // 【新增】補充說明 (多行顯示) 邏輯
+    const suppContainer = document.getElementById('drug-supplemental-container');
+    // 如果 index.html 裡面有這個 div 才執行，避免報錯
+    if (suppContainer) {
+        if (drug.supplemental_info) {
+            document.getElementById('drug-supplemental').innerText = drug.supplemental_info;
+            suppContainer.classList.remove('hidden');
+        } else {
+            suppContainer.classList.add('hidden');
+        }
+    }
 
     const drugFormulas = STORE.formulas.filter(f => f.drug_id === drug.drug_id);
     const selectEl = document.getElementById('formula-select');
