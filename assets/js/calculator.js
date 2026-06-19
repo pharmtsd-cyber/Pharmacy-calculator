@@ -147,33 +147,24 @@ function selectDrug(drug) {
 // 渲染代碼與磨粉 Badge
     const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
     if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
-    
-    // 【修改處】新增「非磨粉劑型」的灰色標籤顯示
-    if(drug.can_crush === 'Y') { 
-        badgeCrush.innerText = '可磨粉'; 
-        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; 
-        badgeCrush.classList.remove('hidden'); 
-    }
-    else if(drug.can_crush === 'N') { 
-        badgeCrush.innerText = '不可磨粉'; 
-        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-red-300 bg-red-50 text-red-700'; 
-        badgeCrush.classList.remove('hidden'); 
-    }
-    else if(drug.can_crush === 'NA') { 
-        badgeCrush.innerText = '非磨粉劑型'; 
-        badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-gray-300 bg-gray-50 text-gray-700'; 
-        badgeCrush.classList.remove('hidden'); 
-    }
-    else {
-        badgeCrush.classList.add('hidden');
-    }
+    if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
+    else if(drug.can_crush === 'N') { badgeCrush.innerText = '不可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-red-300 bg-red-50 text-red-700'; badgeCrush.classList.remove('hidden'); }
+    else if(drug.can_crush === 'NA') { badgeCrush.innerText = '非磨粉劑型'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-gray-300 bg-gray-50 text-gray-700'; badgeCrush.classList.remove('hidden'); }
+    else badgeCrush.classList.add('hidden');
 
-    // 渲染關聯藥品
+    // 動態渲染關聯藥品並「自動附加劑型」
     const relContainer = document.getElementById('drug-related-container'), relList = document.getElementById('drug-related-list');
     if(drug.related_drugs) {
-        relList.innerHTML = drug.related_drugs.split(',').map(r => `<span class="bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded">${r}</span>`).join('');
+        relList.innerHTML = drug.related_drugs.split(',').filter(Boolean).map(r => {
+            // 從資料庫尋找同名藥品，並抓取它的劑型
+            const matchedDrug = STORE.drugs.find(x => x.local_name === r || x.generic_name === r);
+            const formText = matchedDrug && matchedDrug.form ? ` <span class="text-teal-600 font-normal">(${matchedDrug.form})</span>` : '';
+            return `<span class="bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded shadow-sm text-xs font-bold">${r}${formText}</span>`;
+        }).join('');
         relContainer.classList.remove('hidden');
-    } else relContainer.classList.add('hidden');
+    } else {
+        relContainer.classList.add('hidden');
+    }
 
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
@@ -181,9 +172,9 @@ function selectDrug(drug) {
         formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'border-t border-gray-100 mt-2 pt-2 flex flex-col gap-1';
         rightMetaContainer.insertBefore(formRow, document.getElementById('drug-related-container'));
     }
-    formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">劑型</span><span class="font-medium text-gray-800">${drug.form || '未建立'}</span></div>
-        <div class="flex"><span class="w-24 font-bold text-gray-500">其他劑型</span><span class="font-medium text-gray-800">${(drug.other_forms||'').replace(/,/g, '、') || '無'}</span></div>`;
-
+    // 移除其他劑型顯示，只顯示主要劑型
+    formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span></div>`;
+    
     const urlBtn = document.getElementById('drug-url-btn');
     if (drug.reference_url && drug.reference_url.startsWith('http')) {
         urlBtn.href = drug.reference_url; urlBtn.classList.remove('hidden');
