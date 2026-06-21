@@ -1,5 +1,4 @@
-// 渲染系統基礎清單
-function renderSystemLists() {
+window.renderSystemLists = function() {
     const fStaff = document.getElementById('filter-staff') ? document.getElementById('filter-staff').value.toLowerCase() : '';
     const fParams = document.getElementById('filter-params') ? document.getElementById('filter-params').value.toLowerCase() : '';
     const fCats = document.getElementById('filter-cats') ? document.getElementById('filter-cats').value.toLowerCase() : '';
@@ -33,9 +32,8 @@ function renderSystemLists() {
             <td><button onclick="editForm('${f.form_id}', '${f.form_name}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteForm', '${f.form_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
 
-    // 渲染回饋表單
     if (document.getElementById('list-feedbacks')) {
-        document.getElementById('list-feedbacks').innerHTML = STORE.feedbacks.sort((a,b) => new Date(b.date) - new Date(a.date)).map(f => `<tr>
+        document.getElementById('list-feedbacks').innerHTML = (STORE.feedbacks || []).sort((a,b) => new Date(b.date) - new Date(a.date)).map(f => `<tr>
                 <td class="text-xs text-gray-500">${new Date(f.date).toLocaleDateString()}</td>
                 <td class="font-bold text-blue-800">${f.drug_info}</td>
                 <td class="whitespace-pre-wrap">${f.content}</td>
@@ -46,74 +44,74 @@ function renderSystemLists() {
                     </select></td>
                 <td><button onclick="deleteRecord('deleteFeedback', '${f.feedback_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
-}
+};
 
 window.updateFeedbackStatus = async function(id, status) {
     await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status });
 };
 
-// 綁定基礎按鈕
 document.addEventListener('DOMContentLoaded', () => {
     const bind = (id, fn) => { if(document.getElementById(id)) document.getElementById(id).onclick = fn; };
+    
+    // 員工存檔
     bind('btn-save-staff', async () => {
         const id = document.getElementById('staff-id').value.trim(), name = document.getElementById('staff-name').value.trim();
         if(!id || !name) return alert("必填"); if(STORE.staff.some(s => String(s.emp_id) === String(id))) return alert("員編已存在");
         await sendPost({ action: 'saveStaff', emp_id: id, name: name, role: document.getElementById('staff-role').value, status: document.getElementById('staff-status').value });
         document.getElementById('staff-id').value = ''; document.getElementById('staff-name').value = '';
     });
+    
+    // 參數存檔
     bind('btn-save-param', async () => {
         const mode = document.getElementById('param-mode').value, code = document.getElementById('param-code').value.trim(), name = document.getElementById('param-name').value.trim();
         if(!code || !name) return alert("必填"); if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
         if(mode === 'add' && STORE.parameters.some(p => p.param_code === code)) return alert("代碼已存在");
         await sendPost({ action: 'saveParameter', mode: mode, param_code: code, param_name: name, default_unit: document.getElementById('param-unit').value }); 
-        document.getElementById('param-mode').value = 'add'; document.getElementById('param-code').value = ''; document.getElementById('param-code').disabled = false;
-        document.getElementById('param-name').value = ''; document.getElementById('param-unit').value = '';
-        document.getElementById('btn-save-param').innerText = "新增參數"; document.getElementById('btn-cancel-param').classList.add('hidden');
+        document.getElementById('btn-cancel-param').click();
     });
     bind('btn-cancel-param', () => {
         document.getElementById('param-mode').value = 'add'; document.getElementById('param-code').value = ''; document.getElementById('param-code').disabled = false;
         document.getElementById('param-name').value = ''; document.getElementById('param-unit').value = '';
         document.getElementById('btn-save-param').innerText = "新增參數"; document.getElementById('btn-cancel-param').classList.add('hidden');
     });
+
+    // 公告存檔
     bind('btn-save-anno', async () => {
         const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value, date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value };
         if(!payload.version || !payload.date || !payload.content) return alert("必填不可空白");
-        await sendPost(payload); 
-        document.getElementById('anno-mode').value = 'add'; document.getElementById('anno-id').value = '';
-        ['version', 'date', 'content'].forEach(id => document.getElementById('anno-'+id).value = ''); document.getElementById('anno-pinned').value = 'N';
-        document.getElementById('btn-save-anno').innerText = "新增公告"; document.getElementById('btn-cancel-anno').classList.add('hidden');
+        await sendPost(payload); document.getElementById('btn-cancel-anno').click();
     });
     bind('btn-cancel-anno', () => {
         document.getElementById('anno-mode').value = 'add'; document.getElementById('anno-id').value = '';
         ['version', 'date', 'content'].forEach(id => document.getElementById('anno-'+id).value = ''); document.getElementById('anno-pinned').value = 'N';
         document.getElementById('btn-save-anno').innerText = "新增公告"; document.getElementById('btn-cancel-anno').classList.add('hidden');
     });
+
+    // 分類存檔
     bind('btn-save-cat', async () => {
         const payload = { action: 'saveCategory', mode: document.getElementById('cat-mode').value, cat_id: document.getElementById('cat-id').value, cat_1: document.getElementById('cat-level1').value.trim(), cat_2: document.getElementById('cat-level2').value.trim(), cat_3: document.getElementById('cat-level3').value.trim() };
         if(!payload.cat_1) return alert("第一層分類為必填");
-        await sendPost(payload); 
-        document.getElementById('cat-mode').value = 'add'; document.getElementById('cat-id').value = '';
-        ['level1', 'level2', 'level3'].forEach(id => document.getElementById('cat-'+id).value = '');
-        document.getElementById('btn-save-cat').innerText = "新增分類組合"; document.getElementById('btn-cancel-cat').classList.add('hidden');
+        await sendPost(payload); document.getElementById('btn-cancel-cat').click();
     });
     bind('btn-cancel-cat', () => {
         document.getElementById('cat-mode').value = 'add'; document.getElementById('cat-id').value = '';
         ['level1', 'level2', 'level3'].forEach(id => document.getElementById('cat-'+id).value = '');
         document.getElementById('btn-save-cat').innerText = "新增分類組合"; document.getElementById('btn-cancel-cat').classList.add('hidden');
     });
+
+    // 劑型存檔
     bind('btn-save-form', async () => {
         const name = document.getElementById('form-name').value.trim();
         if(!name) return alert("名稱必填");
         await sendPost({ action: 'saveForm', mode: document.getElementById('form-mode').value, form_id: document.getElementById('form-id').value, form_name: name }); 
-        document.getElementById('form-mode').value = 'add'; document.getElementById('form-id').value = ''; document.getElementById('form-name').value = '';
-        document.getElementById('btn-save-form').innerText = "新增劑型"; document.getElementById('btn-cancel-form').classList.add('hidden');
+        document.getElementById('btn-cancel-form').click();
     });
     bind('btn-cancel-form', () => {
         document.getElementById('form-mode').value = 'add'; document.getElementById('form-id').value = ''; document.getElementById('form-name').value = '';
         document.getElementById('btn-save-form').innerText = "新增劑型"; document.getElementById('btn-cancel-form').classList.add('hidden');
     });
     
-    // 綁定輸入即時搜尋
+    // 即時搜尋綁定
     ['filter-staff', 'filter-params', 'filter-cats'].forEach(id => {
         if(document.getElementById(id)) document.getElementById(id).addEventListener('input', renderSystemLists);
     });
