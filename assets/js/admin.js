@@ -1,8 +1,7 @@
 let CURRENT_USER = null;
 let CONTEXT_DRUG = null;
 let ACTIVE_FORMULA_INPUT = 'admin-formula-min';
-// 新增：用來暫存多選標籤的狀態
-let stateTags = { otherForms: [], relatedDrugs: [] };
+let stateTags = { relatedDrugs: [] };
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login').onclick = handleLogin;
@@ -105,15 +104,55 @@ async function loadAllData() {
         document.getElementById('stat-params').innerText = STORE.parameters.length;
         document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-        renderLists(); renderParameterPad(); setupDrugCategorySelects(); setupDrugDropdowns();
+        setupDrugListFilters(); // 初始化藥品清單的三層篩選器
+        renderLists(); 
+        renderParameterPad(); 
+        setupDrugCategorySelects(); 
+        setupDrugDropdowns();
+        
         if (CONTEXT_DRUG) renderLocalFormulas();
     } catch(e) { console.error(e); }
+}
+
+// ==========================================
+// 藥品清單列表 - 三層分類過濾器初始化
+// ==========================================
+function setupDrugListFilters() {
+    const lc1 = document.getElementById('list-cat1'), lc2 = document.getElementById('list-cat2'), lc3 = document.getElementById('list-cat3');
+    const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
+    lc1.innerHTML = '<option value="">-- 第一層分類篩選 --</option>'; 
+    cat1s.forEach(c => lc1.add(new Option(c, c)));
+    
+    lc1.addEventListener('change', () => {
+        lc2.innerHTML = '<option value="">-- 第二層分類篩選 --</option>'; 
+        lc3.innerHTML = '<option value="">-- 第三層分類篩選 --</option>';
+        if (lc1.value) {
+            const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === lc1.value).map(c => c.cat_2).filter(Boolean))];
+            cat2s.forEach(c => lc2.add(new Option(c, c))); lc2.disabled = false;
+        } else {
+            lc2.disabled = true;
+        }
+        lc3.disabled = true;
+        renderLists();
+    });
+    
+    lc2.addEventListener('change', () => {
+        lc3.innerHTML = '<option value="">-- 第三層分類篩選 --</option>';
+        if (lc2.value) {
+            const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === lc1.value && c.cat_2 === lc2.value).map(c => c.cat_3).filter(Boolean))];
+            cat3s.forEach(c => lc3.add(new Option(c, c))); lc3.disabled = false;
+        } else {
+            lc3.disabled = true;
+        }
+        renderLists();
+    });
+    
+    lc3.addEventListener('change', renderLists);
 }
 
 function renderLists() {
     const fStaff = document.getElementById('filter-staff').value.toLowerCase();
     const fParams = document.getElementById('filter-params').value.toLowerCase();
-    const fDrugs = document.getElementById('filter-drugs').value.toLowerCase();
     const fCats = document.getElementById('filter-cats') ? document.getElementById('filter-cats').value.toLowerCase() : '';
 
     document.getElementById('list-staff').innerHTML = STORE.staff.filter(s => (s.name||'').toLowerCase().includes(fStaff) || String(s.emp_id).includes(fStaff))
@@ -141,36 +180,40 @@ function renderLists() {
             <td><button onclick="editForm('${f.form_id}', '${f.form_name}')" class="text-blue-500 hover:text-blue-700 mr-2"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRecord('deleteForm', '${f.form_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
 
-    document.getElementById('list-drugs').innerHTML = STORE.drugs.filter(d => ((d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase().includes(fDrugs))
-        .map(d => `<tr>
-            <td><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span>${d.cat_2 ? `<i class="fa-solid fa-angle-right text-[10px] mx-1 text-gray-400"></i><span class="bg-blue-50 text-blue-800 text-[10px] px-1 rounded">${d.cat_2}</span>` : ''}</td>
-            <td><div class="font-bold text-blue-900">${d.local_name||'無中文名稱'} ${d.common_brand?'('+d.common_brand+')':''}</div><div class="text-[10px] text-gray-500">${d.generic_name||'無一般名稱'}</div></td>
-            <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
-            <td>
-                <button onclick="openFormulaManager('${d.drug_id}')" class="text-purple-600 hover:text-purple-800 mr-3 font-bold text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200" title="管理專屬公式"><i class="fa-solid fa-flask"></i> 公式 (${STORE.formulas.filter(f => f.drug_id === d.drug_id).length})</button>
-                <button onclick="editDrug('${d.drug_id}')" class="text-blue-500 hover:text-blue-700 mr-2" title="編輯藥品"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
-            </td></tr>`).join('');
-}
+    // 藥品清單渲染 (包含三層分類條件)
+    const fDrugs = document.getElementById('filter-drugs').value.toLowerCase();
+    const lc1 = document.getElementById('list-cat1').value;
+    const lc2 = document.getElementById('list-cat2').value;
+    const lc3 = document.getElementById('list-cat3').value;
 
-function renderLocalFormulas() {
-    if (!CONTEXT_DRUG) return;
-    const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id);
-    document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
-        ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
-        : localFormulas.map(f => `
-            <tr class="cursor-pointer hover:bg-blue-50 transition" onclick="editFormula('${f.formula_id}')">
-                <td class="font-bold text-blue-900"><i class="fa-solid fa-pen text-xs text-gray-300 mr-1"></i> ${f.formula_name}</td>
-                <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
-                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
-                <td onclick="event.stopPropagation()"><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
-            </tr>`).join('');
+    const filteredDrugs = STORE.drugs.filter(d => {
+        if (lc1 && d.cat_1 !== lc1) return false;
+        if (lc2 && d.cat_2 !== lc2) return false;
+        if (lc3 && d.cat_3 !== lc3) return false;
+        if (fDrugs) {
+            const searchStr = ((d.drug_code||'')+(d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase();
+            if (!searchStr.includes(fDrugs)) return false;
+        }
+        return true;
+    });
+
+    document.getElementById('drug-list-count').innerText = filteredDrugs.length;
+
+    document.getElementById('list-drugs').innerHTML = filteredDrugs.map(d => `<tr>
+        <td><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span>${d.cat_2 ? `<i class="fa-solid fa-angle-right text-[10px] mx-1 text-gray-400"></i><span class="bg-blue-50 text-blue-800 text-[10px] px-1 rounded">${d.cat_2}</span>` : ''}</td>
+        <td><div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div><div class="text-[10px] text-gray-500">${d.local_name||''} ${d.common_brand?'('+d.common_brand+')':''}</div></td>
+        <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
+        <td>
+            <button onclick="openFormulaManager('${d.drug_id}')" class="text-purple-600 hover:text-purple-800 mr-3 font-bold text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200" title="管理專屬公式"><i class="fa-solid fa-flask"></i> 公式 (${STORE.formulas.filter(f => f.drug_id === d.drug_id).length})</button>
+            <button onclick="viewDrug('${d.drug_id}')" class="text-blue-500 hover:text-blue-700 mr-2" title="瀏覽基本檔"><i class="fa-solid fa-book-open"></i></button>
+            <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
+        </td></tr>`).join('');
 }
 
 function setupDrugCategorySelects() {
     const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
-    c1.innerHTML = '<option value="">--請選擇--</option>'; cat1s.forEach(c => c1.add(new Option(c, c)));
+    c1.innerHTML = '<option value="">-- 可空白 --</option>'; cat1s.forEach(c => c1.add(new Option(c, c)));
     c1.onchange = () => {
         c2.innerHTML = '<option value="">--請選擇--</option>'; c3.innerHTML = '<option value="">--請選擇--</option>';
         if (c1.value) {
@@ -191,6 +234,7 @@ function setupDrugCategorySelects() {
 // 自訂標籤選擇器 (搜尋與加入邏輯)
 // ==========================================
 window.removeCustomTag = function(type, val) {
+    if(document.getElementById('drug-fieldset') && document.getElementById('drug-fieldset').disabled) return;
     stateTags[type] = stateTags[type].filter(v => v !== val);
     renderTagsUI(type);
 };
@@ -217,11 +261,10 @@ function renderTagsUI(type) {
 
 function setupDrugDropdowns() {
     const fSel = document.getElementById('drug-form');
-    fSel.innerHTML = '<option value="">--請選擇--</option>';
+    fSel.innerHTML = '<option value="">-- 可空白 --</option>';
     STORE.forms.forEach(f => fSel.add(new Option(f.form_name, f.form_name)));
 
     const setups = [
-        { type: 'otherForms', getData: () => STORE.forms, getLabel: f => f.form_name, getValue: f => f.form_name },
         { type: 'relatedDrugs', getData: () => STORE.drugs, getLabel: d => `${d.drug_code||''} ${d.local_name||d.generic_name}`.trim(), getValue: d => d.local_name||d.generic_name }
     ];
 
@@ -249,7 +292,10 @@ function setupDrugDropdowns() {
             finalDrop.classList.remove('hidden');
         };
 
-        finalInput.addEventListener('focus', updateDrop);
+        finalInput.addEventListener('focus', () => {
+            if(document.getElementById('drug-fieldset').disabled) return;
+            updateDrop();
+        });
         finalInput.addEventListener('input', updateDrop);
         
         document.addEventListener('click', (e) => {
@@ -334,7 +380,8 @@ async function saveForm() {
     await sendPost({ action: 'saveForm', mode: document.getElementById('form-mode').value, form_id: document.getElementById('form-id').value, form_name: name }); resetFormForm();
 }
 
-function editDrug(drugId) {
+// 【新增】取代原本的 editDrug，改成瀏覽防呆模式
+function viewDrug(drugId) {
     const d = STORE.drugs.find(x => x.drug_id === drugId);
     if(!d) return;
 
@@ -352,7 +399,7 @@ function editDrug(drugId) {
     document.getElementById('drug-generic').value = d.generic_name || '';
     document.getElementById('drug-ingred').value = d.ingredients || '';
     document.getElementById('drug-dose-inst').value = d.dose_instruction || '';
-    document.getElementById('drug-supplemental').value = d.supplemental_info || ''; // 新增讀取
+    document.getElementById('drug-supplemental').value = d.supplemental_info || ''; 
     document.getElementById('drug-url').value = d.reference_url || '';
     document.getElementById('drug-code').value = d.drug_code || '';
     document.getElementById('drug-status').value = d.status || 'Y';
@@ -362,10 +409,22 @@ function editDrug(drugId) {
     stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
     renderTagsUI('relatedDrugs');
 
-    document.getElementById('btn-save-drug').innerText = "更新儲存"; 
+    // 啟動瀏覽防呆模式 (禁用所有輸入框)
+    document.getElementById('drug-fieldset').disabled = true;
+    document.getElementById('btn-edit-drug-mode').classList.remove('hidden');
+    document.getElementById('btn-save-drug').classList.add('hidden');
     document.getElementById('btn-cancel-drug').classList.remove('hidden'); 
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 【新增】解除防呆，進入修改模式
+window.enableDrugEditMode = function() {
+    document.getElementById('drug-fieldset').disabled = false;
+    document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    document.getElementById('btn-save-drug').classList.remove('hidden');
+    document.getElementById('btn-save-drug').innerText = "更新儲存";
+};
 
 function resetDrugForm() {
     document.getElementById('drug-mode').value = 'add'; 
@@ -381,7 +440,7 @@ function resetDrugForm() {
     document.getElementById('drug-generic').value = '';
     document.getElementById('drug-ingred').value = '';
     document.getElementById('drug-dose-inst').value = '';
-    document.getElementById('drug-supplemental').value = ''; // 新增清空
+    document.getElementById('drug-supplemental').value = '';
     document.getElementById('drug-url').value = '';
     document.getElementById('drug-code').value = '';
     document.getElementById('drug-status').value = 'Y';
@@ -392,6 +451,10 @@ function resetDrugForm() {
     renderTagsUI('relatedDrugs');
     document.getElementById('input-relatedDrugs').value = '';
 
+    // 恢復新增狀態
+    document.getElementById('drug-fieldset').disabled = false;
+    document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    document.getElementById('btn-save-drug').classList.remove('hidden');
     document.getElementById('btn-save-drug').innerText = "儲存藥品"; 
     document.getElementById('btn-cancel-drug').classList.add('hidden');
 }
@@ -411,7 +474,7 @@ async function saveDrug() {
         generic_name: document.getElementById('drug-generic').value.trim(),
         ingredients: document.getElementById('drug-ingred').value.trim(),
         dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
-        supplemental_info: document.getElementById('drug-supplemental').value.trim(), // 新增儲存
+        supplemental_info: document.getElementById('drug-supplemental').value.trim(),
         reference_url: document.getElementById('drug-url').value.trim(),
         drug_code: document.getElementById('drug-code').value.trim(),
         can_crush: document.getElementById('drug-can-crush').value,
@@ -419,7 +482,6 @@ async function saveDrug() {
         related_drugs: stateTags.relatedDrugs.join(',')
     };
     
-    // 必填防呆：只鎖藥品代碼與一般名稱
     if(!payload.drug_code || !payload.generic_name) {
         return alert("請務必填寫：【藥品代碼】與【一般名稱(原學名)】！");
     }
@@ -453,7 +515,7 @@ function renderLocalFormulas() {
     document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
         ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
         : localFormulas.map(f => `
-            <tr class="cursor-pointer hover:bg-blue-50 transition" onclick='editFormula(${JSON.stringify(f).replace(/'/g, "&#39;")})'>
+            <tr class="cursor-pointer hover:bg-blue-50 transition" onclick="editFormula('${f.formula_id}')">
                 <td class="font-bold text-blue-900"><i class="fa-solid fa-pen text-xs text-gray-300 mr-1"></i> ${f.formula_name}</td>
                 <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
                 <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
