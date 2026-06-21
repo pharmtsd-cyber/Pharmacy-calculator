@@ -333,3 +333,35 @@ function resetResult() {
     calculatedMin = null; calculatedMax = null;
     document.getElementById('dose-eval-msg').classList.add('hidden');
 }
+
+// ==========================================
+// 意見回饋與後台連動跳轉
+// ==========================================
+window.openFeedbackModal = function(contextInfo) {
+    document.getElementById('feedback-context').innerText = contextInfo;
+    document.getElementById('feedback-content').value = '';
+    document.getElementById('feedback-modal').classList.remove('hidden');
+};
+
+window.submitFeedback = async function() {
+    const content = document.getElementById('feedback-content').value.trim();
+    const contextInfo = document.getElementById('feedback-context').innerText;
+    if(!content) return alert("請輸入回報內容");
+    
+    const btn = document.getElementById('btn-submit-feedback');
+    btn.innerText = '傳送中...'; btn.disabled = true;
+    
+    try {
+        await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'saveFeedback', mode: 'add', drug_info: contextInfo, content: content }) });
+        alert("回報成功！感謝您的協助。");
+        document.getElementById('feedback-modal').classList.add('hidden');
+    } catch(e) { alert("連線失敗"); }
+    
+    btn.innerText = '送出回報'; btn.disabled = false;
+};
+
+window.goToAdminEdit = function() {
+    if(!currentDrug) return;
+    // 帶著參數跳轉到後台，登入後會自動開啟這個藥品
+    window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`;
+};
