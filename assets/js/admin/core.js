@@ -1,8 +1,8 @@
-// 全域變數供各模組使用
+// 全域變數供各模組使用 (STORE 已經在 config.js 中宣告，這裡僅擴充新屬性)
 var CURRENT_USER = null;
 var CONTEXT_DRUG = null;
-var STORE = { drugs: [], parameters: [], formulas: [], staff: [], categories: [], announcements: [], forms: [], feedbacks: [] };
 var stateTags = { relatedDrugs: [] };
+Object.assign(STORE, { staff: [], categories: [], announcements: [], forms: [], feedbacks: [] });
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login').onclick = handleLogin;
