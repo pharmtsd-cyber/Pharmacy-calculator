@@ -13,15 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initializeCalculator() {
     const loadingStatus = document.getElementById('loading-status');
     try {
-        // 同步載入公告檔
-        const [drugsData, paramsData, formulasData, annoData] = await Promise.all([
-            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getAnnouncements')
+        // 【修正】加入 fetchFromGAS('getCategories') 抓取分類基本檔
+        const [drugsData, paramsData, formulasData, annoData, catData] = await Promise.all([
+            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getAnnouncements'), fetchFromGAS('getCategories')
         ]);
 
         if (drugsData && paramsData && formulasData) {
             STORE.drugs = drugsData; STORE.parameters = paramsData; STORE.formulas = formulasData;
+            STORE.categories = catData || []; // 存入分類資料
             
-            // 處理置頂公告顯示
             if (annoData) {
                 const pinned = annoData.find(a => a.is_pinned === 'Y');
                 if (pinned) {
@@ -45,7 +45,8 @@ function setupFilters() {
     const cat3Select = document.getElementById('filter-cat3');
     const searchInput = document.getElementById('search-input');
 
-    const cat1s = [...new Set(STORE.drugs.map(d => d.cat_1).filter(Boolean))];
+    // 【修正】使用 STORE.categories 來產生選項
+    const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     cat1s.forEach(c => cat1Select.add(new Option(c, c)));
 
     cat1Select.addEventListener('change', () => {
@@ -54,7 +55,7 @@ function setupFilters() {
         cat3Select.innerHTML = '<option value="">-- 所有第三層分類 --</option>';
         
         if (val1) {
-            const cat2s = [...new Set(STORE.drugs.filter(d => d.cat_1 === val1).map(d => d.cat_2).filter(Boolean))];
+            const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === val1).map(c => c.cat_2).filter(Boolean))];
             cat2s.forEach(c => cat2Select.add(new Option(c, c)));
             cat2Select.disabled = false;
         } else cat2Select.disabled = true;
@@ -68,7 +69,7 @@ function setupFilters() {
         cat3Select.innerHTML = '<option value="">-- 所有第三層分類 --</option>';
         
         if (val2) {
-            const cat3s = [...new Set(STORE.drugs.filter(d => d.cat_1 === val1 && d.cat_2 === val2).map(d => d.cat_3).filter(Boolean))];
+            const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === val1 && c.cat_2 === val2).map(c => c.cat_3).filter(Boolean))];
             cat3s.forEach(c => cat3Select.add(new Option(c, c)));
             cat3Select.disabled = false;
         } else cat3Select.disabled = true;
@@ -144,7 +145,6 @@ function selectDrug(drug) {
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
     
-    // 渲染代碼與磨粉 Badge
     const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
     if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
     if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
@@ -152,19 +152,15 @@ function selectDrug(drug) {
     else if(drug.can_crush === 'NA') { badgeCrush.innerText = '非磨粉劑型'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-gray-300 bg-gray-50 text-gray-700'; badgeCrush.classList.remove('hidden'); }
     else badgeCrush.classList.add('hidden');
 
-    // 動態渲染關聯藥品並「自動附加劑型」
     const relContainer = document.getElementById('drug-related-container'), relList = document.getElementById('drug-related-list');
     if(drug.related_drugs) {
         relList.innerHTML = drug.related_drugs.split(',').filter(Boolean).map(r => {
-            // 從資料庫尋找同名藥品，並抓取它的劑型
             const matchedDrug = STORE.drugs.find(x => x.local_name === r || x.generic_name === r);
             const formText = matchedDrug && matchedDrug.form ? ` <span class="text-teal-600 font-normal">(${matchedDrug.form})</span>` : '';
             return `<span class="bg-teal-50 text-teal-800 border border-teal-200 px-2 py-0.5 rounded shadow-sm text-xs font-bold">${r}${formText}</span>`;
         }).join('');
         relContainer.classList.remove('hidden');
-    } else {
-        relContainer.classList.add('hidden');
-    }
+    } else relContainer.classList.add('hidden');
 
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
@@ -172,7 +168,6 @@ function selectDrug(drug) {
         formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'border-t border-gray-100 mt-2 pt-2 flex flex-col gap-1';
         rightMetaContainer.insertBefore(formRow, document.getElementById('drug-related-container'));
     }
-    // 移除其他劑型顯示，只顯示主要劑型
     formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span></div>`;
     
     const urlBtn = document.getElementById('drug-url-btn');
@@ -186,16 +181,12 @@ function selectDrug(drug) {
         instContainer.classList.remove('hidden');
     } else instContainer.classList.add('hidden');
 
-    // 【新增】補充說明 (多行顯示) 邏輯
     const suppContainer = document.getElementById('drug-supplemental-container');
-    // 如果 index.html 裡面有這個 div 才執行，避免報錯
     if (suppContainer) {
         if (drug.supplemental_info) {
             document.getElementById('drug-supplemental').innerText = drug.supplemental_info;
             suppContainer.classList.remove('hidden');
-        } else {
-            suppContainer.classList.add('hidden');
-        }
+        } else suppContainer.classList.add('hidden');
     }
 
     const drugFormulas = STORE.formulas.filter(f => f.drug_id === drug.drug_id);
