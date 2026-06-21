@@ -35,7 +35,7 @@ window.setupDrugListFilters = function() {
 window.renderDrugsList = function() {
     if (!document.getElementById('list-drugs')) return;
     const fDrugs = document.getElementById('filter-drugs').value.toLowerCase();
-    const lc1 = document.getElementById('list-cat1').value, lc2 = document.getElementById('list-cat2').value, lc3 = document.getElementById('list-cat3').value;
+    const lc1 = document.getElementById('list-cat1').value, lc2 = document.getElementById('list-cat2').value, lc3 = document.getElementById('list-cat3');
 
     const filteredDrugs = STORE.drugs.filter(d => {
         if (lc1 && d.cat_1 !== lc1) return false;
@@ -50,7 +50,6 @@ window.renderDrugsList = function() {
 
     document.getElementById('drug-list-count').innerText = filteredDrugs.length;
 
-    // 【防呆】整列綁定 onclick="viewDrug" 進行預覽
     document.getElementById('list-drugs').innerHTML = filteredDrugs.map(d => `
         <tr class="cursor-pointer hover:bg-blue-50 transition" onclick="viewDrug('${d.drug_id}')">
             <td><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span>${d.cat_2 ? `<i class="fa-solid fa-angle-right text-[10px] mx-1 text-gray-400"></i><span class="bg-blue-50 text-blue-800 text-[10px] px-1 rounded">${d.cat_2}</span>` : ''}</td>
@@ -96,6 +95,7 @@ window.viewDrug = function(drugId) {
     c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change')); 
     c3.value = d.cat_3 || '';
     
+    // 直白指定欄位，避免 forEach 解析錯誤
     document.getElementById('drug-local').value = d.local_name || '';
     document.getElementById('drug-brand').value = d.brand_name || '';
     document.getElementById('drug-common-brand').value = d.common_brand || '';
@@ -112,7 +112,6 @@ window.viewDrug = function(drugId) {
     stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
     renderTagsUI('relatedDrugs');
 
-    // 啟動瀏覽防呆模式
     document.getElementById('drug-fieldset').disabled = true;
     document.getElementById('btn-edit-drug-mode').classList.remove('hidden');
     document.getElementById('btn-save-drug').classList.add('hidden');
@@ -136,11 +135,21 @@ window.resetDrugForm = function() {
     c1.value = ''; c2.value = ''; c3.value = '';
     c2.disabled = true; c3.disabled = true;
 
-    ['local','brand','common-brand','generic','ingred','dose-inst','supplemental','url','code','can-crush','form'].forEach(id => document.getElementById(`drug-${id}`).value = '');
+    document.getElementById('drug-local').value = '';
+    document.getElementById('drug-brand').value = '';
+    document.getElementById('drug-common-brand').value = '';
+    document.getElementById('drug-generic').value = '';
+    document.getElementById('drug-ingred').value = '';
+    document.getElementById('drug-dose-inst').value = '';
+    document.getElementById('drug-supplemental').value = '';
+    document.getElementById('drug-url').value = '';
+    document.getElementById('drug-code').value = '';
     document.getElementById('drug-status').value = 'Y';
+    document.getElementById('drug-can-crush').value = '';
+    document.getElementById('drug-form').value = '';
     
     stateTags.relatedDrugs = []; renderTagsUI('relatedDrugs');
-    document.getElementById('input-relatedDrugs').value = '';
+    if(document.getElementById('input-relatedDrugs')) document.getElementById('input-relatedDrugs').value = '';
 
     document.getElementById('drug-fieldset').disabled = false;
     document.getElementById('btn-edit-drug-mode').classList.add('hidden');
@@ -151,12 +160,15 @@ window.resetDrugForm = function() {
 
 window.saveDrug = async function() {
     const payload = { 
-        action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, 
-        status: document.getElementById('drug-status').value, cat_1: document.getElementById('drug-cat1').value, cat_2: document.getElementById('drug-cat2').value, cat_3: document.getElementById('drug-cat3').value,
-        local_name: document.getElementById('drug-local').value.trim(), brand_name: document.getElementById('drug-brand').value.trim(), common_brand: document.getElementById('drug-common-brand').value.trim(), generic_name: document.getElementById('drug-generic').value.trim(),
-        ingredients: document.getElementById('drug-ingred').value.trim(), dose_instruction: document.getElementById('drug-dose-inst').value.trim(), supplemental_info: document.getElementById('drug-supplemental').value.trim(),
-        reference_url: document.getElementById('drug-url').value.trim(), drug_code: document.getElementById('drug-code').value.trim(), can_crush: document.getElementById('drug-can-crush').value, form: document.getElementById('drug-form').value, related_drugs: stateTags.relatedDrugs.join(',')
+        action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, status: document.getElementById('drug-status').value,
+        cat_1: document.getElementById('drug-cat1').value, cat_2: document.getElementById('drug-cat2').value, cat_3: document.getElementById('drug-cat3').value,
+        local_name: document.getElementById('drug-local').value.trim(), brand_name: document.getElementById('drug-brand').value.trim(), common_brand: document.getElementById('drug-common-brand').value.trim(),
+        generic_name: document.getElementById('drug-generic').value.trim(), ingredients: document.getElementById('drug-ingred').value.trim(), dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
+        supplemental_info: document.getElementById('drug-supplemental').value.trim(), reference_url: document.getElementById('drug-url').value.trim(),
+        drug_code: document.getElementById('drug-code').value.trim(), can_crush: document.getElementById('drug-can-crush').value, form: document.getElementById('drug-form').value,
+        related_drugs: stateTags.relatedDrugs.join(',')
     };
+    
     if(!payload.drug_code || !payload.generic_name) return alert("請務必填寫：【藥品代碼】與【一般名稱(原學名)】！");
     await sendPost(payload); resetDrugForm();
 };
@@ -170,7 +182,10 @@ window.addCustomTag = function(type, val) {
     const input = document.getElementById(`input-${type}`); input.value = ''; document.getElementById(`drop-${type}`).classList.add('hidden'); input.focus();
 };
 window.renderTagsUI = function(type) {
-    document.getElementById(`tags-${type}`).innerHTML = stateTags[type].map(val => `<span class="bg-blue-50 border border-blue-200 text-blue-800 rounded px-2 py-0.5 text-xs flex items-center gap-1 shadow-sm">${val} <i class="fa-solid fa-xmark cursor-pointer text-blue-400 hover:text-red-500" onclick="removeCustomTag('${type}', '${val.replace(/'/g, "\\'")}')"></i></span>`).join('');
+    const container = document.getElementById(`tags-${type}`);
+    if(container) {
+        container.innerHTML = stateTags[type].map(val => `<span class="bg-blue-50 border border-blue-200 text-blue-800 rounded px-2 py-0.5 text-xs flex items-center gap-1 shadow-sm">${val} <i class="fa-solid fa-xmark cursor-pointer text-blue-400 hover:text-red-500" onclick="removeCustomTag('${type}', '${val.replace(/'/g, "\\'")}')"></i></span>`).join('');
+    }
 };
 
 window.setupDrugDropdowns = function() {
@@ -179,7 +194,8 @@ window.setupDrugDropdowns = function() {
     fSel.innerHTML = '<option value="">-- 可空白 --</option>'; STORE.forms.forEach(f => fSel.add(new Option(f.form_name, f.form_name)));
 
     const input = document.getElementById(`input-relatedDrugs`), drop = document.getElementById(`drop-relatedDrugs`);
-    if(!input) return;
+    if(!input || !drop) return;
+
     const newDrop = drop.cloneNode(true); drop.parentNode.replaceChild(newDrop, drop);
     const newInput = input.cloneNode(true); input.parentNode.replaceChild(newInput, input);
     const finalInput = document.getElementById(`input-relatedDrugs`), finalDrop = document.getElementById(`drop-relatedDrugs`);
@@ -196,7 +212,7 @@ window.setupDrugDropdowns = function() {
         finalDrop.classList.remove('hidden');
     };
 
-    finalInput.addEventListener('focus', () => { if(document.getElementById('drug-fieldset').disabled) return; updateDrop(); });
+    finalInput.addEventListener('focus', () => { if(document.getElementById('drug-fieldset') && document.getElementById('drug-fieldset').disabled) return; updateDrop(); });
     finalInput.addEventListener('input', updateDrop);
     document.addEventListener('click', (e) => { if (!finalInput.contains(e.target) && !finalDrop.contains(e.target)) finalDrop.classList.add('hidden'); });
 };
