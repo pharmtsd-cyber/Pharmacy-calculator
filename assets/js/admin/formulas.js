@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('btn-close-formula-editor')) document.getElementById('btn-close-formula-editor').onclick = () => document.getElementById('formula-editor-container').classList.add('hidden');
     if(document.getElementById('btn-save-formula')) document.getElementById('btn-save-formula').onclick = saveFormula;
 
-    ACTIVE_FORMULA_INPUT = 'admin-formula-min';
+    let ACTIVE_FORMULA_INPUT = 'admin-formula-min';
     const minI = document.getElementById('admin-formula-min'), maxI = document.getElementById('admin-formula-max');
     if(minI) { minI.addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-min'); minI.addEventListener('input', generateTestInputs); }
     if(maxI) { maxI.addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-max'); maxI.addEventListener('input', generateTestInputs); }
@@ -79,7 +79,9 @@ window.saveFormula = async function() {
 };
 
 window.renderParameterPad = function() {
-    document.getElementById('admin-param-pad').innerHTML = STORE.parameters.map(p => `<button type="button" class="text-xs bg-[#1B365D] text-white px-2 py-1 rounded hover:bg-blue-800" onclick="const ta=document.getElementById(ACTIVE_FORMULA_INPUT); ta.value = ta.value.substring(0, ta.selectionStart) + '{${p.param_code}}' + ta.value.substring(ta.selectionEnd); generateTestInputs();">${p.param_name}</button>`).join('');
+    let activeInput = window.ACTIVE_FORMULA_INPUT || 'admin-formula-min';
+    const pad = document.getElementById('admin-param-pad');
+    if(pad) pad.innerHTML = STORE.parameters.map(p => `<button type="button" class="text-xs bg-[#1B365D] text-white px-2 py-1 rounded hover:bg-blue-800" onclick="const ta=document.getElementById('${activeInput}'); ta.value = ta.value.substring(0, ta.selectionStart) + '{${p.param_code}}' + ta.value.substring(ta.selectionEnd); generateTestInputs();">${p.param_name}</button>`).join('');
 };
 
 window.generateTestInputs = function() {
