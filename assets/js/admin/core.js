@@ -39,10 +39,11 @@ async function handleLogin() {
             }
             await loadAllData();
 
-            // 【跳轉檢查】從前端帶過來的 drug_id
+            // 【跳轉檢查】如果前台帶了 drug_id 來，自動切換到藥品頁面並開啟該藥品
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('drug_id')) {
-                document.querySelector('[data-target="drugs"]').click();
+                const targetTab = document.querySelector('[data-target="drugs"]');
+                if(targetTab) targetTab.click();
                 if(typeof window.viewDrug === 'function') window.viewDrug(urlParams.get('drug_id'));
             }
         } else msg.innerText = result.message;
@@ -65,7 +66,7 @@ async function loadAllData() {
         document.getElementById('stat-params').innerText = STORE.parameters.length;
         document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-        // 呼叫其他模組的渲染函數
+        // 呼叫其他模組的初始化與渲染函數
         if(typeof setupDrugListFilters === 'function') setupDrugListFilters();
         if(typeof renderSystemLists === 'function') renderSystemLists();
         if(typeof renderDrugsList === 'function') renderDrugsList();
@@ -84,7 +85,6 @@ window.sendPost = async function(payload) {
 
 window.deleteRecord = async function(action, id) {
     if (action === 'deleteStaff' && id === '93397') return alert("不可刪除程式管理員！");
-    // 【防呆】跳出警告確認
     if (!confirm("確定要刪除這筆資料嗎？此操作無法復原！")) return;
     
     const payload = { action: action };
