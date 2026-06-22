@@ -45,12 +45,17 @@ window.renderSystemLists = function() {
                 <td><button onclick="deleteRecord('deleteFeedback', '${f.feedback_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
 
-    // 【新增】系統總覽：全系統公式對應大表
+// 【修復核心】系統總覽：全系統公式對應大表
     if (document.getElementById('list-dash-formulas')) {
         document.getElementById('list-dash-formulas').innerHTML = STORE.formulas.map(f => {
-            const d = STORE.drugs.find(x => x.drug_id === f.drug_id);
+            // 同時比對新舊 ID
+            const d = STORE.drugs.find(x => x.drug_id === f.drug_id || x.drug_code === f.drug_id); 
             const drugName = d ? (d.local_name || d.generic_name) : '未知藥品';
-            return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="goToFormulaEdit('${f.drug_id}', '${f.formula_id}')">
+            
+            // 注意：點擊跳轉時，傳遞我們找到的正確 drug_id 過去
+            const targetDrugId = d ? d.drug_id : f.drug_id;
+            
+            return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="goToFormulaEdit('${targetDrugId}', '${f.formula_id}')">
                 <td class="font-bold text-blue-900">${drugName}</td>
                 <td><i class="fa-solid fa-pen text-xs text-gray-400 mr-1"></i> ${f.formula_name}</td>
                 <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
