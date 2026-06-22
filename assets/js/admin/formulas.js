@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.openFormulaManager = function(drugId) {
-    CONTEXT_DRUG = STORE.drugs.find(d => d.drug_id === drugId);
+    // 支援舊的 drug_code 或新的 drug_id
+    CONTEXT_DRUG = STORE.drugs.find(d => d.drug_id === drugId || d.drug_code === drugId);
     if (!CONTEXT_DRUG) return;
     document.getElementById('formula-context-name').innerText = CONTEXT_DRUG.local_name || CONTEXT_DRUG.generic_name || '未命名藥品';
     document.querySelectorAll('.nav-item, .tab-content').forEach(el => el.classList.remove('active'));
@@ -33,7 +34,8 @@ window.openFormulaManager = function(drugId) {
 
 window.renderLocalFormulas = function() {
     if (!CONTEXT_DRUG) return;
-    const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id);
+    // 【修復核心】支援舊公式比對
+    const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id || f.drug_id === CONTEXT_DRUG.drug_code);
     document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
         ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
         : localFormulas.map(f => `
