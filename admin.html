@@ -185,4 +185,155 @@
             </div>
         </section>
 
-        <section id
+        <section id="drugs" class="tab-content">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">藥品基本檔維護</h2>
+            <div class="bg-white p-5 rounded-lg shadow-sm border mb-6">
+                <input type="hidden" id="drug-mode" value="add"><input type="hidden" id="drug-id">
+                
+                <fieldset id="drug-fieldset" class="disabled:opacity-80 disabled:cursor-not-allowed">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 border-b pb-4">
+                        <div><label class="block text-xs font-bold mb-1 text-red-600"><i class="fa-solid fa-hospital-user"></i> 所屬科別 (Domain) *</label>
+                            <select id="drug-domain" class="w-full border border-red-300 bg-red-50 rounded p-2 text-sm font-bold">
+                                <option value="NICU">新生兒 ICU</option>
+                                <option value="PED" selected>小兒科</option>
+                                <option value="ADU">成人抗生素</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold mb-1 text-orange-700">藥品代碼 *</label><input type="text" id="drug-code" class="w-full border border-orange-200 rounded p-2 text-sm" placeholder="必填"></div>
+                        <div><label class="block text-xs font-bold mb-1 text-blue-700">一般名稱 (原學名) *</label><input type="text" id="drug-generic" class="w-full border border-blue-200 rounded p-2 text-sm" placeholder="必填"></div>
+                        <div><label class="block text-xs font-bold mb-1">狀態</label><select id="drug-status" class="w-full border rounded p-2 text-sm bg-white"><option value="Y">啟用</option><option value="N">停用</option></select></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 mt-4">
+                        <div><label class="block text-xs font-bold mb-1">第一層分類</label><select id="drug-cat1" class="w-full border rounded p-2 text-sm bg-white"><option value="">-- 可空白 --</option></select></div>
+                        <div><label class="block text-xs font-bold mb-1">第二層分類</label><select id="drug-cat2" class="w-full border rounded p-2 text-sm bg-white" disabled><option value="">--請選擇--</option></select></div>
+                        <div><label class="block text-xs font-bold mb-1">第三層分類</label><select id="drug-cat3" class="w-full border rounded p-2 text-sm bg-white" disabled><option value="">--請選擇--</option></select></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div><label class="block text-xs font-bold mb-1">中文名稱</label><input type="text" id="drug-local" class="w-full border rounded p-2 text-sm"></div>
+                        <div><label class="block text-xs font-bold mb-1">商品名稱</label><input type="text" id="drug-brand" class="w-full border rounded p-2 text-sm"></div>
+                        <div><label class="block text-xs font-bold mb-1">常用商品名稱</label><input type="text" id="drug-common-brand" class="w-full border rounded p-2 text-sm"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 mb-3">
+                        <div class="relative">
+                            <label class="block text-xs font-bold mb-1 text-teal-700">關聯藥品 (搜尋後點擊加入，前端會自動顯示其劑型)</label>
+                            <div class="border border-teal-200 rounded p-1.5 min-h-[38px] flex flex-wrap gap-1 bg-white items-start focus-within:border-[#1B365D] transition">
+                                <div id="tags-relatedDrugs" class="flex flex-wrap gap-1 empty:hidden"></div>
+                                <input type="text" id="input-relatedDrugs" class="flex-grow min-w-[60px] outline-none text-sm p-1 bg-transparent" placeholder="搜尋藥品..." autocomplete="off">
+                            </div>
+                            <div id="drop-relatedDrugs" class="hidden absolute top-full left-0 w-full bg-white border border-gray-300 shadow-xl rounded mt-1 max-h-48 overflow-y-auto z-50"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div><label class="block text-xs font-bold mb-1">是否可磨粉</label>
+                            <select id="drug-can-crush" class="w-full border rounded p-2 text-sm bg-white">
+                                <option value="">-- 可空白 --</option>
+                                <option value="Y">可磨粉</option>
+                                <option value="N">不可磨粉</option>
+                                <option value="NA">此品項非磨粉劑型</option>
+                            </select>
+                        </div>
+                        <div><label class="block text-xs font-bold mb-1">主要劑型</label><select id="drug-form" class="w-full border rounded p-2 text-sm bg-white"><option value="">-- 可空白 --</option></select></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div><label class="block text-xs font-bold mb-1">成分清單 (多行)</label><textarea id="drug-ingred" rows="2" class="w-full border rounded p-2 text-sm"></textarea></div>
+                        <div><label class="block text-xs font-bold mb-1 text-green-700">建議劑量說明 (多行)</label><textarea id="drug-dose-inst" rows="2" class="w-full border border-green-200 rounded p-2 text-sm"></textarea></div>
+                        <div><label class="block text-xs font-bold mb-1 text-blue-700">補充說明 (多行)</label><textarea id="drug-supplemental" rows="2" class="w-full border border-blue-200 rounded p-2 text-sm"></textarea></div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold mb-1 text-purple-700">參考資料/仿單連結 (多行)</label>
+                        <textarea id="drug-url" rows="2" class="w-full border border-purple-200 rounded p-2 text-sm font-mono"></textarea>
+                    </div>
+                </fieldset>
+
+                <div class="flex gap-2 mt-4">
+                    <button id="btn-edit-drug-mode" onclick="enableDrugEditMode()" type="button" class="hidden bg-orange-500 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-orange-600 transition"><i class="fa-solid fa-unlock mr-1"></i> 開始編輯此藥品</button>
+                    <button id="btn-manage-formula" onclick="jumpToFormula()" type="button" class="hidden bg-purple-600 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-purple-700 transition"><i class="fa-solid fa-flask mr-1"></i> 管理此藥品公式</button>
+                    
+                    <button id="btn-save-drug" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">儲存藥品</button>
+                    <button id="btn-cancel-drug" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消返回</button>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div class="p-3 bg-gray-50 border-b flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm text-gray-700">藥品清單 (共 <span id="drug-list-count" class="text-blue-600">0</span> 筆) - 點擊列表可瀏覽基本檔</span>
+                        <input type="text" id="filter-drugs" placeholder="模糊篩選(代碼/名稱)..." class="border rounded p-1.5 text-sm w-64">
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="list-cat1" class="border rounded p-1.5 text-sm w-1/3 bg-white"><option value="">-- 第一層分類篩選 --</option></select>
+                        <select id="list-cat2" class="border rounded p-1.5 text-sm w-1/3 bg-white" disabled><option value="">-- 第二層分類篩選 --</option></select>
+                        <select id="list-cat3" class="border rounded p-1.5 text-sm w-1/3 bg-white" disabled><option value="">-- 第三層分類篩選 --</option></select>
+                    </div>
+                </div>
+                <table class="w-full data-table text-sm"><thead><tr><th>所屬系統</th><th>代碼 / 分類</th><th>一般名稱(學名) / 商品名</th><th>狀態</th><th>操作</th></tr></thead><tbody id="list-drugs"></tbody></table>
+            </div>
+        </section>
+
+        <section id="formulas" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <button onclick="document.querySelector('[data-target=\'drugs\']').click()" class="text-sm text-blue-600 hover:text-blue-800 mb-1 inline-block"><i class="fa-solid fa-arrow-left"></i> 返回藥品清單</button>
+                    <h2 class="text-2xl font-bold text-gray-800"><span id="formula-context-name" class="text-[#1B365D]">藥品名稱</span> 的專屬公式</h2>
+                </div>
+                <button id="btn-show-add-formula" class="bg-[#1B365D] text-white px-5 py-2 rounded font-bold hover:bg-blue-900 shadow"><i class="fa-solid fa-plus"></i> 新增公式</button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border overflow-hidden mb-6">
+                <table class="w-full data-table text-sm"><thead><tr><th>方法名稱</th><th>區間公式 (點擊編輯)</th><th>絕對最大劑量上限</th><th>操作</th></tr></thead><tbody id="list-local-formulas"></tbody></table>
+            </div>
+
+            <div id="formula-editor-container" class="bg-white p-5 rounded-lg shadow-xl border border-blue-200 hidden relative">
+                <button id="btn-close-formula-editor" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+                <h3 class="font-bold text-[#1B365D] mb-4 border-b pb-2" id="formula-editor-title">新增計算公式</h3>
+                <input type="hidden" id="formula-mode" value="add"><input type="hidden" id="formula-id">
+                
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold mb-1">計算方法名稱 *</label><input type="text" id="admin-formula-name" placeholder="如：小兒(2-5歲) 或 體重計算" class="w-full border rounded p-2 text-sm focus:border-blue-500"></div>
+                    <div><label class="block text-xs font-bold mb-1">結果單位 *</label><input type="text" id="admin-result-unit" placeholder="如：mg/day" class="w-full border rounded p-2 text-sm focus:border-blue-500"></div>
+                    <div><label class="block text-xs font-bold mb-1">備註提醒</label><input type="text" id="admin-remark" class="w-full border rounded p-2 text-sm focus:border-blue-500"></div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="w-full md:w-1/3 bg-gray-50 p-3 border rounded">
+                        <div class="text-xs text-blue-800 mb-2 font-bold"><i class="fa-solid fa-hand-pointer mr-1"></i>請先點擊右側輸入框，再點參數帶入</div>
+                        <div id="admin-param-pad" class="flex flex-wrap gap-1 mb-2"></div>
+                        <div class="grid grid-cols-4 gap-1"><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">+</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">-</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">*</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">/</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">(</button><button class="op-btn bg-white border rounded text-xs py-1 font-bold shadow-sm hover:bg-gray-100">)</button></div>
+                    </div>
+                    
+                    <div class="w-full md:w-2/3 flex flex-col gap-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="block text-xs font-bold mb-1 text-blue-700">下限公式 (Min) *</label><textarea id="admin-formula-min" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-blue-50" placeholder="例如：{weight} * 1.5"></textarea></div>
+                            <div><label class="block text-xs font-bold mb-1 text-blue-700">上限公式 (Max) (若固定則免填)</label><textarea id="admin-formula-max" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-blue-50" placeholder="例如：{weight} * 2"></textarea></div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2 bg-red-50 p-2 rounded border border-red-100 mt-1">
+                            <div><label class="block text-[10px] font-bold text-red-700">單次絕對上限</label><input type="number" step="any" id="formula-single-max" class="w-full border rounded p-1 text-xs"></div>
+                            <div><label class="block text-[10px] font-bold text-red-700">單次單位</label><input type="text" id="formula-single-unit" class="w-full border rounded p-1 text-xs"></div>
+                            <div><label class="block text-[10px] font-bold text-red-700">單日絕對上限</label><input type="number" step="any" id="formula-daily-max" class="w-full border rounded p-1 text-xs"></div>
+                            <div><label class="block text-[10px] font-bold text-red-700">單日單位</label><input type="text" id="formula-daily-unit" class="w-full border rounded p-1 text-xs"></div>
+                        </div>
+                        <div class="p-3 bg-blue-50 border border-blue-100 rounded text-xs mt-1">
+                            <div id="admin-test-inputs" class="grid grid-cols-3 gap-2 mb-2 border-b border-blue-200 pb-2">請先輸入公式</div>
+                            <div class="flex items-center gap-2 mt-2">區間結果：<span id="admin-test-result" class="font-bold text-xl text-[#1B365D]">-- ~ --</span></div>
+                        </div>
+                        <div class="flex justify-end gap-2 mt-1"><button id="btn-save-formula" class="bg-[#1B365D] text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-blue-900 transition">儲存區間公式</button></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="./assets/js/config.js"></script>
+    <script src="./assets/js/api.js"></script>
+    <script src="./assets/js/admin/core.js"></script>
+    <script src="./assets/js/admin/system.js"></script>
+    <script src="./assets/js/admin/drugs.js"></script>
+    <script src="./assets/js/admin/formulas.js"></script>
+
+</body>
+</html>
