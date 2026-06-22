@@ -50,10 +50,11 @@ window.renderDrugsList = function() {
 
     document.getElementById('drug-list-count').innerText = filteredDrugs.length;
 
-    // 【修改】加入 Domain 標籤的顯示
+    // 加入預設保護機制，如果舊資料沒有 domain，預設為 PED
     document.getElementById('list-drugs').innerHTML = filteredDrugs.map(d => {
-        let domText = d.domain === 'NICU' ? '新生兒 ICU' : (d.domain === 'ADU' ? '成人抗生素' : '小兒科');
-        let domColor = d.domain === 'NICU' ? 'bg-pink-100 text-pink-800' : (d.domain === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
+        const dom = d.domain || 'PED';
+        let domText = dom === 'NICU' ? '新生兒 ICU' : (dom === 'ADU' ? '成人抗生素' : '小兒科');
+        let domColor = dom === 'NICU' ? 'bg-pink-100 text-pink-800' : (dom === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
         
         return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="viewDrug('${d.drug_id}')">
             <td><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
