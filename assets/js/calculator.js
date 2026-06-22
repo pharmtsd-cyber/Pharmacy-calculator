@@ -123,14 +123,16 @@ function applyFilters() {
 
     const filtered = STORE.drugs.filter(d => {
         if (d.status && d.status.toUpperCase() !== 'Y') return false;
-        // 【核心過濾器】只顯示當前所屬科別的藥品
-        if (d.domain !== currentDomain && currentDomain !== 'home') return false; 
+        
+        // 【核心過濾器修正】相容舊資料：若未填寫 domain，預設歸類於 PED(小兒科)
+        const drugDomain = d.domain || 'PED';
+        if (currentDomain !== 'home' && drugDomain !== currentDomain) return false; 
         
         if (c1 && d.cat_1 !== c1) return false;
         if (c2 && d.cat_2 !== c2) return false;
         if (c3 && d.cat_3 !== c3) return false;
         if (k) {
-            const searchStr = ((d.local_name||'') + (d.generic_name||'') + (d.brand_name||'') + (d.common_brand||'')).toLowerCase();
+            const searchStr = ((d.drug_code||'') + (d.local_name||'') + (d.generic_name||'') + (d.brand_name||'') + (d.common_brand||'')).toLowerCase();
             if (!searchStr.includes(k)) return false;
         }
         return true;
