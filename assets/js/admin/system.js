@@ -44,16 +44,36 @@ window.renderSystemLists = function() {
                     </select></td>
                 <td><button onclick="deleteRecord('deleteFeedback', '${f.feedback_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
+
+    // 渲染系統首頁設定的資料
+    if(STORE.settings && document.getElementById('set-welcome')) {
+        document.getElementById('set-welcome').value = STORE.settings.welcome_title || '';
+        document.getElementById('set-owner').value = STORE.settings.owner || '';
+        document.getElementById('set-copyright').value = STORE.settings.copyright || '';
+        document.getElementById('set-rules').value = STORE.settings.usage_rules || '';
+    }
 };
 
 window.updateFeedbackStatus = async function(id, status) {
     await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status });
 };
 
+window.saveSettings = async function() {
+    const payload = {
+        action: 'saveSettings',
+        settings: {
+            welcome_title: document.getElementById('set-welcome').value,
+            owner: document.getElementById('set-owner').value,
+            copyright: document.getElementById('set-copyright').value,
+            usage_rules: document.getElementById('set-rules').value
+        }
+    };
+    await sendPost(payload);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     const bind = (id, fn) => { if(document.getElementById(id)) document.getElementById(id).onclick = fn; };
     
-    // 員工存檔
     bind('btn-save-staff', async () => {
         const id = document.getElementById('staff-id').value.trim(), name = document.getElementById('staff-name').value.trim();
         if(!id || !name) return alert("必填"); if(STORE.staff.some(s => String(s.emp_id) === String(id))) return alert("員編已存在");
@@ -61,7 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('staff-id').value = ''; document.getElementById('staff-name').value = '';
     });
     
-    // 參數存檔
     bind('btn-save-param', async () => {
         const mode = document.getElementById('param-mode').value, code = document.getElementById('param-code').value.trim(), name = document.getElementById('param-name').value.trim();
         if(!code || !name) return alert("必填"); if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
@@ -75,7 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-save-param').innerText = "新增參數"; document.getElementById('btn-cancel-param').classList.add('hidden');
     });
 
-    // 公告存檔
     bind('btn-save-anno', async () => {
         const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value, date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value };
         if(!payload.version || !payload.date || !payload.content) return alert("必填不可空白");
@@ -87,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-save-anno').innerText = "新增公告"; document.getElementById('btn-cancel-anno').classList.add('hidden');
     });
 
-    // 分類存檔
     bind('btn-save-cat', async () => {
         const payload = { action: 'saveCategory', mode: document.getElementById('cat-mode').value, cat_id: document.getElementById('cat-id').value, cat_1: document.getElementById('cat-level1').value.trim(), cat_2: document.getElementById('cat-level2').value.trim(), cat_3: document.getElementById('cat-level3').value.trim() };
         if(!payload.cat_1) return alert("第一層分類為必填");
@@ -99,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-save-cat').innerText = "新增分類組合"; document.getElementById('btn-cancel-cat').classList.add('hidden');
     });
 
-    // 劑型存檔
     bind('btn-save-form', async () => {
         const name = document.getElementById('form-name').value.trim();
         if(!name) return alert("名稱必填");
@@ -111,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('btn-save-form').innerText = "新增劑型"; document.getElementById('btn-cancel-form').classList.add('hidden');
     });
     
-    // 即時搜尋綁定
     ['filter-staff', 'filter-params', 'filter-cats'].forEach(id => {
         if(document.getElementById(id)) document.getElementById(id).addEventListener('input', renderSystemLists);
     });
@@ -142,32 +157,4 @@ window.editAnnouncement = function(id) {
 window.editForm = function(id, name) {
     document.getElementById('form-mode').value = 'edit'; document.getElementById('form-id').value = id; document.getElementById('form-name').value = name;
     document.getElementById('btn-save-form').innerText = "更新劑型"; document.getElementById('btn-cancel-form').classList.remove('hidden');
-};
-
-// 【新增】儲存與載入首頁設定
-window.saveSettings = async function() {
-    const payload = {
-        action: 'saveSettings',
-        settings: {
-            welcome_title: document.getElementById('set-welcome').value,
-            owner: document.getElementById('set-owner').value,
-            copyright: document.getElementById('set-copyright').value,
-            usage_rules: document.getElementById('set-rules').value
-        }
-    };
-    await sendPost(payload);
-};
-
-// 讓介面打開時能讀取設定 (將其加入系統總覽渲染中)
-const originalRenderSystemLists = window.renderSystemLists;
-window.renderSystemLists = function() {
-    originalRenderSystemLists(); // 執行原本的渲染
-    
-    // 渲染設定檔
-    if(STORE.settings && document.getElementById('set-welcome')) {
-        document.getElementById('set-welcome').value = STORE.settings.welcome_title || '';
-        document.getElementById('set-owner').value = STORE.settings.owner || '';
-        document.getElementById('set-copyright').value = STORE.settings.copyright || '';
-        document.getElementById('set-rules').value = STORE.settings.usage_rules || '';
-    }
 };
