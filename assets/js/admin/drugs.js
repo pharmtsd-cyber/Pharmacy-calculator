@@ -50,8 +50,13 @@ window.renderDrugsList = function() {
 
     document.getElementById('drug-list-count').innerText = filteredDrugs.length;
 
-    document.getElementById('list-drugs').innerHTML = filteredDrugs.map(d => `
-        <tr class="cursor-pointer hover:bg-blue-50 transition" onclick="viewDrug('${d.drug_id}')">
+    // 【修改】加入 Domain 標籤的顯示
+    document.getElementById('list-drugs').innerHTML = filteredDrugs.map(d => {
+        let domText = d.domain === 'NICU' ? '新生兒 ICU' : (d.domain === 'ADU' ? '成人抗生素' : '小兒科');
+        let domColor = d.domain === 'NICU' ? 'bg-pink-100 text-pink-800' : (d.domain === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
+        
+        return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="viewDrug('${d.drug_id}')">
+            <td><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
             <td><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span>${d.cat_2 ? `<i class="fa-solid fa-angle-right text-[10px] mx-1 text-gray-400"></i><span class="bg-blue-50 text-blue-800 text-[10px] px-1 rounded">${d.cat_2}</span>` : ''}</td>
             <td><div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div><div class="text-[10px] text-gray-500">${d.local_name||''} ${d.common_brand?'('+d.common_brand+')':''}</div></td>
             <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
@@ -59,7 +64,8 @@ window.renderDrugsList = function() {
                 <button onclick="openFormulaManager('${d.drug_id}')" class="text-purple-600 hover:text-purple-800 mr-3 font-bold text-xs bg-purple-50 px-2 py-1 rounded border border-purple-200" title="管理專屬公式"><i class="fa-solid fa-flask"></i> 公式 (${STORE.formulas.filter(f => f.drug_id === d.drug_id).length})</button>
                 <button onclick="deleteRecord('deleteDrug', '${d.drug_id}')" class="text-red-500 hover:text-red-700" title="刪除藥品"><i class="fa-solid fa-trash"></i></button>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 };
 
 window.setupDrugCategorySelects = function() {
@@ -90,12 +96,14 @@ window.viewDrug = function(drugId) {
     document.getElementById('drug-mode').value = 'edit'; 
     document.getElementById('drug-id').value = d.drug_id;
     
+    // 【修改】加入 Domain
+    document.getElementById('drug-domain').value = d.domain || 'PED';
+
     const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
     c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change')); 
     c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change')); 
     c3.value = d.cat_3 || '';
     
-    // 直白指定欄位，避免 forEach 解析錯誤
     document.getElementById('drug-local').value = d.local_name || '';
     document.getElementById('drug-brand').value = d.brand_name || '';
     document.getElementById('drug-common-brand').value = d.common_brand || '';
@@ -130,6 +138,7 @@ window.enableDrugEditMode = function() {
 window.resetDrugForm = function() {
     document.getElementById('drug-mode').value = 'add'; 
     document.getElementById('drug-id').value = '';
+    document.getElementById('drug-domain').value = 'PED';
     
     const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
     c1.value = ''; c2.value = ''; c3.value = '';
@@ -159,17 +168,31 @@ window.resetDrugForm = function() {
 };
 
 window.saveDrug = async function() {
+    // 【修改】加入 domain 並完美對齊 18 個欄位的順序
     const payload = { 
-        action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, status: document.getElementById('drug-status').value,
-        cat_1: document.getElementById('drug-cat1').value, cat_2: document.getElementById('drug-cat2').value, cat_3: document.getElementById('drug-cat3').value,
-        local_name: document.getElementById('drug-local').value.trim(), brand_name: document.getElementById('drug-brand').value.trim(), common_brand: document.getElementById('drug-common-brand').value.trim(),
-        generic_name: document.getElementById('drug-generic').value.trim(), ingredients: document.getElementById('drug-ingred').value.trim(), dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
-        supplemental_info: document.getElementById('drug-supplemental').value.trim(), reference_url: document.getElementById('drug-url').value.trim(),
-        drug_code: document.getElementById('drug-code').value.trim(), can_crush: document.getElementById('drug-can-crush').value, form: document.getElementById('drug-form').value,
+        action: 'saveDrug', 
+        mode: document.getElementById('drug-mode').value, 
+        drug_id: document.getElementById('drug-id').value, 
+        status: document.getElementById('drug-status').value,
+        domain: document.getElementById('drug-domain').value,
+        cat_1: document.getElementById('drug-cat1').value, 
+        cat_2: document.getElementById('drug-cat2').value, 
+        cat_3: document.getElementById('drug-cat3').value,
+        local_name: document.getElementById('drug-local').value.trim(), 
+        brand_name: document.getElementById('drug-brand').value.trim(), 
+        common_brand: document.getElementById('drug-common-brand').value.trim(),
+        generic_name: document.getElementById('drug-generic').value.trim(), 
+        ingredients: document.getElementById('drug-ingred').value.trim(), 
+        dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
+        supplemental_info: document.getElementById('drug-supplemental').value.trim(), 
+        reference_url: document.getElementById('drug-url').value.trim(),
+        drug_code: document.getElementById('drug-code').value.trim(), 
+        can_crush: document.getElementById('drug-can-crush').value, 
+        form: document.getElementById('drug-form').value,
         related_drugs: stateTags.relatedDrugs.join(',')
     };
     
-    if(!payload.drug_code || !payload.generic_name) return alert("請務必填寫：【藥品代碼】與【一般名稱(原學名)】！");
+    if(!payload.drug_code || !payload.generic_name || !payload.domain) return alert("請務必填寫：【所屬科別】、【藥品代碼】與【一般名稱(原學名)】！");
     await sendPost(payload); resetDrugForm();
 };
 
