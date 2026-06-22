@@ -45,7 +45,7 @@ window.setupDrugListFilters = function() {
 };
 
 window.renderDrugsList = function() {
-    // 1. 渲染系統總覽 (Dashboard) 藥品清單
+    // 1. 渲染系統總覽 (Dashboard) 藥品清單與公式聯動表
     const dashList = document.getElementById('list-dash-drugs');
     if (dashList) {
         const fd = document.getElementById('list-dash-domain') ? document.getElementById('list-dash-domain').value : '';
@@ -54,6 +54,7 @@ window.renderDrugsList = function() {
         const fc3 = document.getElementById('list-dash-cat3') ? document.getElementById('list-dash-cat3').value : '';
         const fText = document.getElementById('filter-dash-drugs') ? document.getElementById('filter-dash-drugs').value.toLowerCase() : '';
 
+        // 【核心】取得當前篩選後的藥品陣列
         const dashDrugs = STORE.drugs.filter(d => {
             if (fd && (d.domain || 'PED') !== fd) return false;
             if (fc1 && d.cat_1 !== fc1) return false;
@@ -79,6 +80,35 @@ window.renderDrugsList = function() {
                 <td><span class="${d.status==='Y'?'text-green-600':'text-red-500'} font-bold">${d.status}</span></td>
             </tr>`;
         }).join('');
+
+        // 【新增聯動機制】根據上方篩選出的 dashDrugs，動態渲染下方的公式清單
+        const dashFormulasList = document.getElementById('list-dash-formulas');
+        if (dashFormulasList) {
+            // 將過濾出來的藥品 ID / Code 收集到一個集合中，加速比對
+            const validIds = new Set();
+            dashDrugs.forEach(d => {
+                validIds.add(d.drug_id);
+                if (d.drug_code) validIds.add(d.drug_code);
+            });
+
+            // 抓出屬於這些藥品的公式
+            const dashFormulas = STORE.formulas.filter(f => validIds.has(f.drug_id));
+
+            dashFormulasList.innerHTML = dashFormulas.length === 0 ? 
+                `<tr><td colspan="4" class="text-center text-gray-400 py-4">目前篩選條件下無對應公式</td></tr>` :
+                dashFormulas.map(f => {
+                    const d = dashDrugs.find(x => x.drug_id === f.drug_id || x.drug_code === f.drug_id); 
+                    const drugName = d ? (d.local_name || d.generic_name) : '未知藥品';
+                    const targetDrugId = d ? d.drug_id : f.drug_id;
+                    
+                    return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="goToFormulaEdit('${targetDrugId}', '${f.formula_id}')">
+                        <td class="font-bold text-blue-900">${drugName}</td>
+                        <td><i class="fa-solid fa-pen text-xs text-gray-400 mr-1"></i> ${f.formula_name}</td>
+                        <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                        <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                    </tr>`;
+                }).join('');
+        }
     }
 
     // 2. 渲染藥品維護分頁的清單
@@ -107,7 +137,6 @@ window.renderDrugsList = function() {
             let domText = dom === 'NICU' ? '新生兒 ICU' : (dom === 'ADU' ? '成人抗生素' : '小兒科');
             let domColor = dom === 'NICU' ? 'bg-pink-100 text-pink-800' : (dom === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
             
-            // 【修復核心】計算公式數量：相容舊的 drug_code 或新的 drug_id
             const fCount = STORE.formulas.filter(f => f.drug_id === d.drug_id || f.drug_id === d.drug_code).length;
 
             return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="viewDrug('${d.drug_id}')">
