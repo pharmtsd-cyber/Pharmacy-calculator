@@ -233,7 +233,7 @@ function selectDrug(drug) {
         } else suppContainer.classList.add('hidden');
     }
 
-    const drugFormulas = STORE.formulas.filter(f => f.drug_id === drug.drug_id);
+    const drugFormulas = STORE.formulas.filter(f => f.drug_id === drug.drug_id || f.drug_id === drug.drug_code);
     const selectEl = document.getElementById('formula-select');
     selectEl.innerHTML = '';
 
