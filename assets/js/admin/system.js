@@ -143,3 +143,31 @@ window.editForm = function(id, name) {
     document.getElementById('form-mode').value = 'edit'; document.getElementById('form-id').value = id; document.getElementById('form-name').value = name;
     document.getElementById('btn-save-form').innerText = "更新劑型"; document.getElementById('btn-cancel-form').classList.remove('hidden');
 };
+
+// 【新增】儲存與載入首頁設定
+window.saveSettings = async function() {
+    const payload = {
+        action: 'saveSettings',
+        settings: {
+            welcome_title: document.getElementById('set-welcome').value,
+            owner: document.getElementById('set-owner').value,
+            copyright: document.getElementById('set-copyright').value,
+            usage_rules: document.getElementById('set-rules').value
+        }
+    };
+    await sendPost(payload);
+};
+
+// 讓介面打開時能讀取設定 (將其加入系統總覽渲染中)
+const originalRenderSystemLists = window.renderSystemLists;
+window.renderSystemLists = function() {
+    originalRenderSystemLists(); // 執行原本的渲染
+    
+    // 渲染設定檔
+    if(STORE.settings && document.getElementById('set-welcome')) {
+        document.getElementById('set-welcome').value = STORE.settings.welcome_title || '';
+        document.getElementById('set-owner').value = STORE.settings.owner || '';
+        document.getElementById('set-copyright').value = STORE.settings.copyright || '';
+        document.getElementById('set-rules').value = STORE.settings.usage_rules || '';
+    }
+};
