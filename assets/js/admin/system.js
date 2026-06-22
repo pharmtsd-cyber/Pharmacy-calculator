@@ -45,7 +45,20 @@ window.renderSystemLists = function() {
                 <td><button onclick="deleteRecord('deleteFeedback', '${f.feedback_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
     }
 
-    // 渲染系統首頁設定的資料
+    // 【新增】系統總覽：全系統公式對應大表
+    if (document.getElementById('list-dash-formulas')) {
+        document.getElementById('list-dash-formulas').innerHTML = STORE.formulas.map(f => {
+            const d = STORE.drugs.find(x => x.drug_id === f.drug_id);
+            const drugName = d ? (d.local_name || d.generic_name) : '未知藥品';
+            return `<tr class="cursor-pointer hover:bg-blue-50 transition" onclick="goToFormulaEdit('${f.drug_id}', '${f.formula_id}')">
+                <td class="font-bold text-blue-900">${drugName}</td>
+                <td><i class="fa-solid fa-pen text-xs text-gray-400 mr-1"></i> ${f.formula_name}</td>
+                <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+            </tr>`;
+        }).join('');
+    }
+
     if(STORE.settings && document.getElementById('set-welcome')) {
         document.getElementById('set-welcome').value = STORE.settings.welcome_title || '';
         document.getElementById('set-owner').value = STORE.settings.owner || '';
@@ -57,18 +70,8 @@ window.renderSystemLists = function() {
 window.updateFeedbackStatus = async function(id, status) {
     await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status });
 };
-
 window.saveSettings = async function() {
-    const payload = {
-        action: 'saveSettings',
-        settings: {
-            welcome_title: document.getElementById('set-welcome').value,
-            owner: document.getElementById('set-owner').value,
-            copyright: document.getElementById('set-copyright').value,
-            usage_rules: document.getElementById('set-rules').value
-        }
-    };
-    await sendPost(payload);
+    await sendPost({ action: 'saveSettings', settings: { welcome_title: document.getElementById('set-welcome').value, owner: document.getElementById('set-owner').value, copyright: document.getElementById('set-copyright').value, usage_rules: document.getElementById('set-rules').value } });
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -80,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await sendPost({ action: 'saveStaff', emp_id: id, name: name, role: document.getElementById('staff-role').value, status: document.getElementById('staff-status').value });
         document.getElementById('staff-id').value = ''; document.getElementById('staff-name').value = '';
     });
-    
     bind('btn-save-param', async () => {
         const mode = document.getElementById('param-mode').value, code = document.getElementById('param-code').value.trim(), name = document.getElementById('param-name').value.trim();
         if(!code || !name) return alert("必填"); if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
@@ -93,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('param-name').value = ''; document.getElementById('param-unit').value = '';
         document.getElementById('btn-save-param').innerText = "新增參數"; document.getElementById('btn-cancel-param').classList.add('hidden');
     });
-
     bind('btn-save-anno', async () => {
         const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value, date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value };
         if(!payload.version || !payload.date || !payload.content) return alert("必填不可空白");
@@ -104,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ['version', 'date', 'content'].forEach(id => document.getElementById('anno-'+id).value = ''); document.getElementById('anno-pinned').value = 'N';
         document.getElementById('btn-save-anno').innerText = "新增公告"; document.getElementById('btn-cancel-anno').classList.add('hidden');
     });
-
     bind('btn-save-cat', async () => {
         const payload = { action: 'saveCategory', mode: document.getElementById('cat-mode').value, cat_id: document.getElementById('cat-id').value, cat_1: document.getElementById('cat-level1').value.trim(), cat_2: document.getElementById('cat-level2').value.trim(), cat_3: document.getElementById('cat-level3').value.trim() };
         if(!payload.cat_1) return alert("第一層分類為必填");
@@ -115,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ['level1', 'level2', 'level3'].forEach(id => document.getElementById('cat-'+id).value = '');
         document.getElementById('btn-save-cat').innerText = "新增分類組合"; document.getElementById('btn-cancel-cat').classList.add('hidden');
     });
-
     bind('btn-save-form', async () => {
         const name = document.getElementById('form-name').value.trim();
         if(!name) return alert("名稱必填");
@@ -126,29 +125,23 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('form-mode').value = 'add'; document.getElementById('form-id').value = ''; document.getElementById('form-name').value = '';
         document.getElementById('btn-save-form').innerText = "新增劑型"; document.getElementById('btn-cancel-form').classList.add('hidden');
     });
-    
-    ['filter-staff', 'filter-params', 'filter-cats'].forEach(id => {
-        if(document.getElementById(id)) document.getElementById(id).addEventListener('input', renderSystemLists);
-    });
+    ['filter-staff', 'filter-params', 'filter-cats'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).addEventListener('input', renderSystemLists); });
 });
 
 window.editParameter = function(code) {
-    const p = STORE.parameters.find(x => x.param_code === code);
-    if(!p) return;
+    const p = STORE.parameters.find(x => x.param_code === code); if(!p) return;
     document.getElementById('param-mode').value = 'edit'; document.getElementById('param-code').value = p.param_code; document.getElementById('param-code').disabled = true;
     document.getElementById('param-name').value = p.param_name; document.getElementById('param-unit').value = p.default_unit;
     document.getElementById('btn-save-param').innerText = "更新參數"; document.getElementById('btn-cancel-param').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 window.editCategory = function(id) {
-    const c = STORE.categories.find(x => x.cat_id === id);
-    if(!c) return;
+    const c = STORE.categories.find(x => x.cat_id === id); if(!c) return;
     document.getElementById('cat-mode').value = 'edit'; document.getElementById('cat-id').value = c.cat_id;
     document.getElementById('cat-level1').value = c.cat_1; document.getElementById('cat-level2').value = c.cat_2 || ''; document.getElementById('cat-level3').value = c.cat_3 || '';
     document.getElementById('btn-save-cat').innerText = "更新分類"; document.getElementById('btn-cancel-cat').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 window.editAnnouncement = function(id) {
-    const a = STORE.announcements.find(x => x.announce_id === id);
-    if(!a) return;
+    const a = STORE.announcements.find(x => x.announce_id === id); if(!a) return;
     document.getElementById('anno-mode').value = 'edit'; document.getElementById('anno-id').value = a.announce_id;
     document.getElementById('anno-version').value = a.version; document.getElementById('anno-date').value = a.date ? new Date(a.date).toISOString().split('T')[0] : '';
     document.getElementById('anno-pinned').value = a.is_pinned; document.getElementById('anno-content').value = a.content;
