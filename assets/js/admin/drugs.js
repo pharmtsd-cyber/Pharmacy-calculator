@@ -168,7 +168,6 @@ window.viewDrug = function(drugId) {
     const d = STORE.drugs.find(x => x.drug_id === drugId || x.drug_code === drugId); 
     if(!d) return;
 
-    // 【修改核心】強制切換畫面到藥品頁，確保從 dashboard 跳轉時不會跑不出來
     switchTab('drugs');
 
     document.getElementById('drug-mode').value = 'edit'; 
@@ -196,19 +195,19 @@ window.viewDrug = function(drugId) {
     stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
     renderTagsUI('relatedDrugs');
 
-    document.getElementById('drug-fieldset').disabled = true;
-    document.getElementById('btn-edit-drug-mode').classList.remove('hidden');
-    document.getElementById('btn-manage-formula').classList.remove('hidden'); 
-    document.getElementById('btn-save-drug').classList.add('hidden');
-    
-    // 【修改】將返回按鈕文字明確化
-    document.getElementById('btn-cancel-drug').classList.remove('hidden'); 
-    document.getElementById('btn-cancel-drug').innerHTML = '<i class="fa-solid fa-arrow-turn-up"></i> 返回清單';
+    // 【保護機制】確保按鈕存在才切換顯示狀態
+    if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = true;
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.remove('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.remove('hidden'); 
+    if (document.getElementById('btn-save-drug')) document.getElementById('btn-save-drug').classList.add('hidden');
+    if (document.getElementById('btn-cancel-drug')) {
+        document.getElementById('btn-cancel-drug').classList.remove('hidden'); 
+        document.getElementById('btn-cancel-drug').innerHTML = '<i class="fa-solid fa-arrow-turn-up"></i> 返回清單';
+    }
     
     renderCurrentDrugFormulas(d.drug_id, d.drug_code);
-    document.getElementById('drug-formulas-section').classList.remove('hidden');
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.remove('hidden');
 
-    // 【修改】平滑滾動到頁面最頂端
     scrollToTop();
 };
 
@@ -265,15 +264,17 @@ window.resetDrugForm = function() {
     stateTags.relatedDrugs = []; renderTagsUI('relatedDrugs');
     if(document.getElementById('input-relatedDrugs')) document.getElementById('input-relatedDrugs').value = '';
 
-    document.getElementById('drug-fieldset').disabled = false;
-    document.getElementById('btn-edit-drug-mode').classList.add('hidden');
-    document.getElementById('btn-manage-formula').classList.add('hidden'); 
-    document.getElementById('btn-save-drug').classList.remove('hidden');
-    document.getElementById('btn-save-drug').innerText = "儲存藥品"; 
-    document.getElementById('btn-cancel-drug').classList.add('hidden');
-    document.getElementById('drug-formulas-section').classList.add('hidden');
+    // 【保護機制】確保按鈕存在才切換顯示狀態
+    if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = false;
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.add('hidden'); 
+    if (document.getElementById('btn-save-drug')) {
+        document.getElementById('btn-save-drug').classList.remove('hidden');
+        document.getElementById('btn-save-drug').innerText = "儲存藥品"; 
+    }
+    if (document.getElementById('btn-cancel-drug')) document.getElementById('btn-cancel-drug').classList.add('hidden');
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.add('hidden');
 
-    // 【修改核心】點擊取消返回時，滑動到底下的藥品清單
     scrollToElement('filter-drugs');
 };
 
