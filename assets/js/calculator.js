@@ -366,7 +366,7 @@ window.submitFeedback = async function() {
     } catch(e) { alert("連線失敗"); } btn.innerText = '送出回報'; btn.disabled = false;
 };
 
-// 【新增】保存目前畫面狀態 (LocalStorage)
+// 保存目前畫面狀態 (LocalStorage)
 window.saveCurrentState = function() {
     if (!currentDrug) return;
     const state = {
@@ -376,17 +376,17 @@ window.saveCurrentState = function() {
     localStorage.setItem('pharma_front_state', JSON.stringify(state));
 };
 
-// 【修改】帶出資訊修改
+// 【優化】帶出資訊修改：精準傳遞 drug_id 進行編輯
 window.goToAdminEdit = function() { 
     if(!currentDrug) return; 
     saveCurrentState();
     window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; 
 };
 
-// 【修改】帶出公式修改 (利用 dash_filter 讓後台自動篩選該藥品)
+// 【優化核心】帶出公式修改：精準傳遞 action=formula_view 與 drug_id
 window.goToAdminFormula = function() {
     if(!currentDrug) return;
     saveCurrentState();
-    const filterStr = currentDrug.drug_code || currentDrug.local_name || currentDrug.generic_name;
-    window.location.href = `./admin.html?dash_filter=${encodeURIComponent(filterStr)}`;
+    // 傳送確切的 ID 與動作指令，避免中文編碼遺失
+    window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`;
 };
