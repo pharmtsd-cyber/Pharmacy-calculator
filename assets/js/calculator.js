@@ -4,9 +4,18 @@ let calculatedMin = null;
 let calculatedMax = null;
 let currentDomain = 'home'; 
 
+// 【新增】防抖引擎 (Debounce)：延遲執行，避免狂打字時畫面卡頓
+window.debounce = function(func, delay) {
+    let timer;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, delay);
+    };
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
-    document.getElementById('prescribed-dose').addEventListener('input', checkPrescriptionSafety);
+    document.getElementById('prescribed-dose').addEventListener('input', window.debounce(checkPrescriptionSafety, 300));
     
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
@@ -45,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeCalculator();
 });
 
-// 【新增】控制手風琴 (Accordion) 收合展開的函式
 window.toggleAccordion = function(contentId, btnElement) {
     const content = document.getElementById(contentId);
     const icon = btnElement.querySelector('i.fa-chevron-down');
@@ -118,7 +126,10 @@ function setupFilters() {
         } else cat3Select.disabled = true; applyFilters();
     });
 
-    cat3Select.addEventListener('change', applyFilters); searchInput.addEventListener('input', applyFilters);
+    cat3Select.addEventListener('change', applyFilters); 
+    
+    // 【套用防抖】延遲 300 毫秒才執行搜尋
+    searchInput.addEventListener('input', window.debounce(applyFilters, 300));
 }
 
 function applyFilters() {
@@ -209,26 +220,13 @@ function selectDrug(drug) {
     }
     formRow.innerHTML = `<span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span>`;
     
-    // 【更新】將收合區塊注入資料並根據是否有值來隱藏/顯示
     const instW = document.getElementById('drug-dose-inst-wrapper');
-    if (drug.dose_instruction) {
-        document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction;
-        instW.classList.remove('hidden');
-    } else instW.classList.add('hidden');
-
+    if (drug.dose_instruction) { document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction; instW.classList.remove('hidden'); } else instW.classList.add('hidden');
     const suppW = document.getElementById('drug-supplemental-wrapper');
-    if (drug.supplemental_info) {
-        document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info;
-        suppW.classList.remove('hidden');
-    } else suppW.classList.add('hidden');
-
+    if (drug.supplemental_info) { document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info; suppW.classList.remove('hidden'); } else suppW.classList.add('hidden');
     const refW = document.getElementById('drug-ref-wrapper');
-    if (drug.reference_url) {
-        document.getElementById('drug-ref-content').innerText = drug.reference_url;
-        refW.classList.remove('hidden');
-    } else refW.classList.add('hidden');
+    if (drug.reference_url) { document.getElementById('drug-ref-content').innerText = drug.reference_url; refW.classList.remove('hidden'); } else refW.classList.add('hidden');
 
-    // 每次點選新藥品時，預設收合所有 Accordion
     document.querySelectorAll('#drug-dose-inst-content, #drug-supplemental-content, #drug-ref-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('#drug-dose-inst-wrapper button i, #drug-supplemental-wrapper button i, #drug-ref-wrapper button i').forEach(icon => icon.classList.remove('rotate-180'));
 
@@ -240,24 +238,14 @@ function selectDrug(drug) {
         return fId !== '' && (fId === targetId || fId === targetCode);
     });
 
-    const selectEl = document.getElementById('formula-select');
-    selectEl.innerHTML = '';
-
-    if (drugFormulas.length === 0) {
-        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>';
-        document.getElementById('dynamic-parameters').innerHTML = '';
-        resetResult(); return;
-    }
+    const selectEl = document.getElementById('formula-select'); selectEl.innerHTML = '';
+    if (drugFormulas.length === 0) { selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>'; document.getElementById('dynamic-parameters').innerHTML = ''; resetResult(); return; }
 
     drugFormulas.forEach(f => {
-        const option = document.createElement('option');
-        option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
+        const option = document.createElement('option'); option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
     });
 
-    selectEl.onchange = (e) => {
-        currentFormula = drugFormulas.find(f => f.formula_id === e.target.value); renderDynamicParameters(currentFormula);
-    };
-
+    selectEl.onchange = (e) => { currentFormula = drugFormulas.find(f => f.formula_id === e.target.value); renderDynamicParameters(currentFormula); };
     currentFormula = drugFormulas[0]; renderDynamicParameters(currentFormula);
 }
 
@@ -293,7 +281,7 @@ function renderDynamicParameters(formula) {
         paramContainer.appendChild(div);
     });
 
-    document.querySelectorAll('.param-input').forEach(input => input.addEventListener('input', executeCalculation));
+    document.querySelectorAll('.param-input').forEach(input => input.addEventListener('input', window.debounce(executeCalculation, 100)));
 }
 
 function executeCalculation() {
