@@ -187,7 +187,14 @@
                 
                 <div class="mb-4 bg-purple-50 p-3 rounded border border-purple-200">
                     <label class="block text-xs font-bold mb-1 text-purple-800"><i class="fa-solid fa-link"></i> 綁定藥品 (必填) *</label>
-                    <select id="admin-formula-drug-id" class="w-full border border-purple-300 rounded p-2 text-sm font-bold text-[#1B365D] focus:border-purple-500 bg-white"></select>
+                    <div class="relative">
+                        <div class="border border-purple-300 rounded p-1.5 min-h-[42px] flex flex-wrap gap-1 bg-white items-center focus-within:border-purple-500 transition">
+                            <div id="tags-formulaDrug" class="flex flex-wrap gap-1 empty:hidden w-full"></div>
+                            <input type="text" id="input-formulaDrug" class="flex-grow outline-none text-sm p-1 bg-transparent w-full" placeholder="模糊搜尋藥品 (代碼/學名/中文/商品名)..." autocomplete="off">
+                        </div>
+                        <div id="drop-formulaDrug" class="hidden absolute top-full left-0 w-full bg-white border border-gray-300 shadow-xl rounded mt-1 max-h-48 overflow-y-auto z-50"></div>
+                    </div>
+                    <input type="hidden" id="formula-drug-id-hidden">
                 </div>
 
                 <div class="grid grid-cols-3 gap-4 mb-4">
