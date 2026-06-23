@@ -43,7 +43,6 @@ window.renderDrugsList = function() {
     const fc3 = document.getElementById('list-dash-cat3') ? document.getElementById('list-dash-cat3').value : '';
     const fText = document.getElementById('filter-dash-drugs') ? document.getElementById('filter-dash-drugs').value.toLowerCase().trim() : '';
     
-    // 【優化】支援多組關鍵字空白分隔搜尋
     const dashKeywords = fText ? fText.split(/\s+/) : [];
 
     const dashDrugs = STORE.drugs.filter(d => {
@@ -52,7 +51,6 @@ window.renderDrugsList = function() {
         if (fc2 && d.cat_2 !== fc2) return false;
         if (fc3 && d.cat_3 !== fc3) return false;
         if (dashKeywords.length > 0) {
-            // 【優化】搜尋字串包含全部需要的欄位
             const searchStr = `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''} ${d.cat_1||''}`.toLowerCase();
             if (!dashKeywords.every(kw => searchStr.includes(kw))) return false;
         }
@@ -85,13 +83,19 @@ window.renderDrugsList = function() {
     if(typeof renderDashFormulas === 'function') renderDashFormulas(dashDrugs);
 };
 
+// 【優化】這裡就是負責渲染「全系統公式對應大表」的地方
 window.renderDashFormulas = function(dashDrugs) {
     const dashFormulasList = document.getElementById('list-dash-formulas');
     if (!dashFormulasList) return;
 
+    // 先收集出當下符合條件的藥品 ID
     const validIds = new Set();
-    dashDrugs.forEach(d => { validIds.add(String(d.drug_id).trim().toLowerCase()); if (d.drug_code) validIds.add(String(d.drug_code).trim().toLowerCase()); });
+    dashDrugs.forEach(d => { 
+        validIds.add(String(d.drug_id).trim().toLowerCase()); 
+        if (d.drug_code) validIds.add(String(d.drug_code).trim().toLowerCase()); 
+    });
 
+    // 只保留屬於這些藥品的公式
     const dashFormulas = STORE.formulas.filter(f => validIds.has(String(f.drug_id).trim().toLowerCase()));
 
     dashFormulasList.innerHTML = dashFormulas.length === 0 ? 
@@ -101,8 +105,8 @@ window.renderDashFormulas = function(dashDrugs) {
             const d = dashDrugs.find(x => String(x.drug_id).trim().toLowerCase() === targetId || String(x.drug_code).trim().toLowerCase() === targetId); 
             const actualDrugId = d ? d.drug_id : f.drug_id;
             
-            // 【優化】公式總表顯示豐富的藥品資訊
-            let drugNameHtml = '<div class="text-gray-400">未知藥品 (舊綁定)</div>';
+            // 【優化核心】保證一定輸出三行豐富的藥品資訊
+            let drugNameHtml = `<div class="text-red-400 font-bold">遺失藥品關聯<br/><span class="text-xs text-gray-400">(${f.drug_id})</span></div>`;
             if (d) {
                 drugNameHtml = `
                     <div class="font-bold text-orange-600 mb-0.5">${d.drug_code||'--'}</div>
@@ -228,6 +232,34 @@ window.viewDrug = function(drugId) {
     scrollToTop();
 };
 
+window.renderCurrentDrugFormulas = function(drugId, drugCode) {
+    const localFormulas = STORE.formulas.filter(f => f.drug_id === drugId || (drugCode && f.drug_id === drugCode));
+    const container = document.getElementById('list-current-drug-formulas');
+    if(!container) return;
+    
+    container.innerHTML = localFormulas.length === 0 
+        ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
+        : localFormulas.map(f => `
+            <tr class="cursor-pointer hover:bg-purple-50 transition" onclick="goToFormulaEdit('${drugId}', '${f.formula_id}')">
+                <td class="font-bold text-purple-900"><i class="fa-solid fa-pen text-xs text-purple-300 mr-1"></i> ${f.formula_name}</td>
+                <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                <td onclick="event.stopPropagation()"><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`).join('');
+};
+
+window.enableDrugEditMode = function() {
+    document.getElementById('drug-fieldset').disabled = false;
+    document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    document.getElementById('btn-save-drug').classList.remove('hidden');
+    document.getElementById('btn-save-drug').innerText = "更新儲存";
+};
+
+window.jumpToFormula = function() {
+    const drugId = document.getElementById('drug-id').value;
+    if(drugId) window.goToAddFormula(drugId);
+};
+
 window.resetDrugForm = function() {
     document.getElementById('drug-mode').value = 'add'; 
     document.getElementById('drug-id').value = '';
@@ -320,7 +352,6 @@ window.setupDrugDropdowns = function() {
         
         const html = filtered.map(item => {
             const val = item.local_name||item.generic_name;
-            // 【優化】關聯藥品下拉選單顯示豐富資訊
             const label = `<span class="text-orange-600 font-bold mr-1">${item.drug_code||''}</span> <span class="text-blue-900 font-bold">${item.generic_name||''}</span> <span class="text-gray-500 text-xs ml-1">${item.local_name||''} ${item.brand_name||''}</span>`;
             
             if (stateTags.relatedDrugs.includes(val)) return ''; 
