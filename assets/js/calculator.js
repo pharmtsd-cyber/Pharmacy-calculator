@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
     document.getElementById('prescribed-dose').addEventListener('input', checkPrescriptionSafety);
     
-    // 左側選單切換邏輯
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.front-nav').forEach(n => {
@@ -45,6 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initializeCalculator();
 });
+
+// 【新增】控制手風琴 (Accordion) 收合展開的函式
+window.toggleAccordion = function(contentId, btnElement) {
+    const content = document.getElementById(contentId);
+    const icon = btnElement.querySelector('i.fa-chevron-down');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+};
 
 async function initializeCalculator() {
     const loadingStatus = document.getElementById('loading-status');
@@ -186,25 +199,38 @@ function selectDrug(drug) {
         relContainer.classList.remove('hidden');
     } else relContainer.classList.add('hidden');
 
-    // 【修復】使用 appendChild 安全追加，避免 DOM 結構改變導致 NotFoundError
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
     if (!formRow) {
         formRow = document.createElement('div'); 
         formRow.id = 'drug-form-row'; 
-        formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; // 修改樣式
-        rightMetaContainer.appendChild(formRow); // 【安全綁定】
+        formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; 
+        rightMetaContainer.appendChild(formRow); 
     }
     formRow.innerHTML = `<span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span>`;
     
-    const refContainer = document.getElementById('drug-ref-container');
-    if (drug.reference_url) { document.getElementById('drug-ref-text').innerText = drug.reference_url; refContainer.classList.remove('hidden'); } else refContainer.classList.add('hidden');
-    const instContainer = document.getElementById('drug-dose-inst-container');
-    if (drug.dose_instruction) { document.getElementById('drug-dose-inst').innerText = drug.dose_instruction; instContainer.classList.remove('hidden'); } else instContainer.classList.add('hidden');
-    const suppContainer = document.getElementById('drug-supplemental-container');
-    if (suppContainer) {
-        if (drug.supplemental_info) { document.getElementById('drug-supplemental').innerText = drug.supplemental_info; suppContainer.classList.remove('hidden'); } else suppContainer.classList.add('hidden');
-    }
+    // 【更新】將收合區塊注入資料並根據是否有值來隱藏/顯示
+    const instW = document.getElementById('drug-dose-inst-wrapper');
+    if (drug.dose_instruction) {
+        document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction;
+        instW.classList.remove('hidden');
+    } else instW.classList.add('hidden');
+
+    const suppW = document.getElementById('drug-supplemental-wrapper');
+    if (drug.supplemental_info) {
+        document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info;
+        suppW.classList.remove('hidden');
+    } else suppW.classList.add('hidden');
+
+    const refW = document.getElementById('drug-ref-wrapper');
+    if (drug.reference_url) {
+        document.getElementById('drug-ref-content').innerText = drug.reference_url;
+        refW.classList.remove('hidden');
+    } else refW.classList.add('hidden');
+
+    // 每次點選新藥品時，預設收合所有 Accordion
+    document.querySelectorAll('#drug-dose-inst-content, #drug-supplemental-content, #drug-ref-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('#drug-dose-inst-wrapper button i, #drug-supplemental-wrapper button i, #drug-ref-wrapper button i').forEach(icon => icon.classList.remove('rotate-180'));
 
     const targetId = String(drug.drug_id || '').trim().toLowerCase();
     const targetCode = String(drug.drug_code || '').trim().toLowerCase();
