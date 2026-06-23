@@ -114,7 +114,9 @@
                                     <span id="drug-badge-crush" class="hidden text-[10px] font-bold px-2 py-0.5 rounded border"></span>
                                     <span id="drug-badge-code" class="hidden bg-gray-200 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded"></span>
                                     <button onclick="window.openFeedbackModal('藥品錯誤回報：' + (currentDrug.local_name||currentDrug.generic_name))" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border hover:bg-gray-200 shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i> 報錯</button>
-                                    <button onclick="window.goToAdminEdit()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded border hover:bg-blue-200 shadow-sm font-bold"><i class="fa-solid fa-pen-to-square"></i> 後台修改</button>
+                                    
+                                    <button onclick="window.goToAdminEdit()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded border hover:bg-blue-200 shadow-sm font-bold"><i class="fa-solid fa-pen-to-square"></i> 資訊修改</button>
+                                    <button onclick="window.goToAdminFormula()" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded border hover:bg-purple-200 shadow-sm font-bold"><i class="fa-solid fa-flask"></i> 公式修改</button>
                                 </div>
                             </div>
                             
@@ -131,19 +133,19 @@
                                 <div id="drug-related-list" class="flex flex-wrap gap-1"></div>
                             </div>
                             </div>
-        
+
                         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                             <label class="block text-xs font-bold text-gray-700 mb-1.5">請選擇臨床適應症 / 年齡段 / 計算方法：</label>
                             <select id="formula-select" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] bg-white"></select>
                             <p id="formula-remark" class="text-xs text-blue-600 mt-1 italic"></p>
                         </div>
-        
+
                         <div id="absolute-max-alert" class="hidden bg-red-50 border border-red-200 p-2 rounded text-xs text-red-700 font-bold flex gap-4 shadow-sm">
                             <span id="single-max-text"></span><span id="daily-max-text"></span>
                         </div>
-        
+
                         <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-200 pt-4 px-2"></div>
-        
+
                         <div class="mt-2 border-t pt-5 bg-blue-50/50 p-5 rounded-lg border border-blue-100 flex flex-col gap-4 shadow-sm">
                             <div>
                                 <span class="block text-xs font-bold text-gray-600 mb-1">系統計算建議區間：</span>
@@ -161,9 +163,8 @@
                                 <div id="dose-eval-msg" class="text-sm font-bold mt-2 hidden flex items-center gap-1.5 p-2 rounded"></div>
                             </div>
                         </div>
-        
+
                         <div class="mt-4 flex flex-col gap-3">
-                            
                             <div id="drug-dose-inst-wrapper" class="hidden bg-white border border-green-200 rounded-lg overflow-hidden shadow-sm">
                                 <button onclick="window.toggleAccordion('drug-dose-inst-content', this)" class="w-full bg-green-50 p-3 flex justify-between items-center text-green-800 font-bold text-sm hover:bg-green-100 transition">
                                     <span class="flex items-center gap-2"><i class="fa-solid fa-book-medical"></i> 臨床建議劑量說明</span>
@@ -171,7 +172,7 @@
                                 </button>
                                 <div id="drug-dose-inst-content" class="hidden p-4 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-green-100"></div>
                             </div>
-        
+
                             <div id="drug-supplemental-wrapper" class="hidden bg-white border border-blue-200 rounded-lg overflow-hidden shadow-sm">
                                 <button onclick="window.toggleAccordion('drug-supplemental-content', this)" class="w-full bg-blue-50 p-3 flex justify-between items-center text-blue-800 font-bold text-sm hover:bg-blue-100 transition">
                                     <span class="flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> 補充說明</span>
@@ -179,7 +180,7 @@
                                 </button>
                                 <div id="drug-supplemental-content" class="hidden p-4 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-blue-100"></div>
                             </div>
-        
+
                             <div id="drug-ref-wrapper" class="hidden bg-white border border-purple-200 rounded-lg overflow-hidden shadow-sm">
                                 <button onclick="window.toggleAccordion('drug-ref-content', this)" class="w-full bg-purple-50 p-3 flex justify-between items-center text-purple-800 font-bold text-sm hover:bg-purple-100 transition">
                                     <span class="flex items-center gap-2"><i class="fa-solid fa-file-medical"></i> 參考資料 / 仿單連結</span>
@@ -187,8 +188,8 @@
                                 </button>
                                 <div id="drug-ref-content" class="hidden p-4 text-xs text-gray-700 font-mono break-all border-t border-purple-100"></div>
                             </div>
-        
                         </div>
+
                     </div>
                 </div>
             </section>
