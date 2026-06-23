@@ -160,3 +160,17 @@ window.deleteRecord = async function(action, id) {
     if(action==='deleteForm') payload.form_id = id; if(action==='deleteFeedback') payload.feedback_id = id;
     await sendPost(payload);
 };
+
+// 【補回】修改密碼功能
+window.handleChangePassword = async function() {
+    const oldPw = document.getElementById('pw-old').value, newPw = document.getElementById('pw-new').value;
+    if(!oldPw || !newPw) return alert("請完整輸入密碼");
+    const res = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'updatePassword', emp_id: CURRENT_USER.emp_id, old_password: oldPw, new_password: newPw }) });
+    const result = await res.json();
+    if(result.status === "success") { 
+        alert("密碼修改成功！"); 
+        document.getElementById('pw-modal').classList.add('hidden'); 
+    } else {
+        alert("修改失敗：" + result.message);
+    }
+};
