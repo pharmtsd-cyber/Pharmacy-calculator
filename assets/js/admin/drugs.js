@@ -2,6 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('btn-save-drug')) document.getElementById('btn-save-drug').onclick = saveDrug;
 });
 
+// 【新增】防抖引擎 (供後台藥品過濾使用)
+window.debounce = function(func, delay) {
+    let timer;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, delay);
+    };
+};
+
 window.setupDrugListFilters = function() {
     const dc1 = document.getElementById('list-dash-cat1'), dc2 = document.getElementById('list-dash-cat2'), dc3 = document.getElementById('list-dash-cat3');
     const dd = document.getElementById('list-dash-domain'), df = document.getElementById('filter-dash-drugs');
@@ -30,7 +39,9 @@ window.setupDrugListFilters = function() {
 
     bindCascading(dc1, dc2, dc3);
     if(dd) dd.addEventListener('change', renderDrugsList);
-    if(df) df.addEventListener('input', renderDrugsList);
+    
+    // 【套用防抖】
+    if(df) df.addEventListener('input', window.debounce(renderDrugsList, 300));
 };
 
 window.renderDrugsList = function() {
@@ -68,7 +79,6 @@ window.renderDrugsList = function() {
             ? `<button onclick="toggleDrugStatus('${d.drug_id}', 'Y', event)" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-green-200 border border-green-300">上線中</button>`
             : `<button onclick="toggleDrugStatus('${d.drug_id}', 'N', event)" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-200 border border-red-300">未上線</button>`;
 
-        // 【修改核心】在總表操作區，直接加入「新增公式」按鈕並傳入 drug_id
         return `<tr class="hover:bg-blue-50 transition">
             <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
             <td class="pt-3"><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span></td>
@@ -104,7 +114,6 @@ window.renderDashFormulas = function(dashDrugs) {
             const d = dashDrugs.find(x => String(x.drug_id).trim().toLowerCase() === targetId || String(x.drug_code).trim().toLowerCase() === targetId); 
             const actualDrugId = d ? d.drug_id : f.drug_id;
             
-            // 【優化核心】公式總表的藥品顯示，改成四層結構，資訊超級完整！
             let drugNameHtml = `<div class="text-red-400 font-bold">遺失藥品關聯<br/><span class="text-xs text-gray-400">(${f.drug_id})</span></div>`;
             if (d) {
                 drugNameHtml = `
@@ -224,8 +233,42 @@ window.viewDrug = function(drugId) {
         document.getElementById('btn-save-drug').classList.remove('hidden');
         document.getElementById('btn-save-drug').innerText = "更新儲存"; 
     }
+    
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.remove('hidden'); 
+    
+    if (typeof renderCurrentDrugFormulas === 'function') renderCurrentDrugFormulas(d.drug_id, d.drug_code);
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.remove('hidden');
 
     scrollToTop();
+};
+
+window.renderCurrentDrugFormulas = function(drugId, drugCode) {
+    const localFormulas = STORE.formulas.filter(f => f.drug_id === drugId || (drugCode && f.drug_id === drugCode));
+    const container = document.getElementById('list-current-drug-formulas');
+    if(!container) return;
+    
+    container.innerHTML = localFormulas.length === 0 
+        ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
+        : localFormulas.map(f => `
+            <tr class="cursor-pointer hover:bg-purple-50 transition" onclick="goToFormulaEdit('${drugId}', '${f.formula_id}')">
+                <td class="font-bold text-purple-900"><i class="fa-solid fa-pen text-xs text-purple-300 mr-1"></i> ${f.formula_name}</td>
+                <td class="font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                <td class="text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                <td onclick="event.stopPropagation()"><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`).join('');
+};
+
+window.enableDrugEditMode = function() {
+    document.getElementById('drug-fieldset').disabled = false;
+    document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    document.getElementById('btn-save-drug').classList.remove('hidden');
+    document.getElementById('btn-save-drug').innerText = "更新儲存";
+};
+
+window.jumpToFormula = function() {
+    const drugId = document.getElementById('drug-id').value;
+    if(drugId) window.goToAddFormula(drugId);
 };
 
 window.resetDrugForm = function() {
@@ -254,10 +297,15 @@ window.resetDrugForm = function() {
     if(document.getElementById('input-relatedDrugs')) document.getElementById('input-relatedDrugs').value = '';
 
     if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = false;
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.add('hidden'); 
+    
     if (document.getElementById('btn-save-drug')) {
         document.getElementById('btn-save-drug').classList.remove('hidden');
         document.getElementById('btn-save-drug').innerText = "儲存新藥品"; 
     }
+    
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.add('hidden');
 };
 
 window.saveDrug = async function() {
@@ -324,7 +372,8 @@ window.setupDrugDropdowns = function() {
         finalDrop.classList.remove('hidden');
     };
 
+    // 【套用防抖】
     finalInput.addEventListener('focus', () => { if(document.getElementById('drug-fieldset') && document.getElementById('drug-fieldset').disabled) return; updateDrop(); });
-    finalInput.addEventListener('input', updateDrop);
+    finalInput.addEventListener('input', window.debounce(updateDrop, 300));
     document.addEventListener('click', (e) => { if (!finalInput.contains(e.target) && !finalDrop.contains(e.target)) finalDrop.classList.add('hidden'); });
 };
