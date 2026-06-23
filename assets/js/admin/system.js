@@ -53,16 +53,11 @@ window.renderSystemLists = function() {
     }
 };
 
-window.updateFeedbackStatus = async function(id, status) {
-    await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status });
-};
-window.saveSettings = async function() {
-    await sendPost({ action: 'saveSettings', settings: { welcome_title: document.getElementById('set-welcome').value, owner: document.getElementById('set-owner').value, copyright: document.getElementById('set-copyright').value, usage_rules: document.getElementById('set-rules').value } });
-};
+window.updateFeedbackStatus = async function(id, status) { await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status }); };
+window.saveSettings = async function() { await sendPost({ action: 'saveSettings', settings: { welcome_title: document.getElementById('set-welcome').value, owner: document.getElementById('set-owner').value, copyright: document.getElementById('set-copyright').value, usage_rules: document.getElementById('set-rules').value } }); };
 
 document.addEventListener('DOMContentLoaded', () => {
     const bind = (id, fn) => { if(document.getElementById(id)) document.getElementById(id).onclick = fn; };
-    
     bind('btn-save-staff', async () => {
         const id = document.getElementById('staff-id').value.trim(), name = document.getElementById('staff-name').value.trim();
         if(!id || !name) return alert("必填"); if(STORE.staff.some(s => String(s.emp_id) === String(id))) return alert("員編已存在");
