@@ -41,16 +41,20 @@ window.renderDrugsList = function() {
     const fc1 = document.getElementById('list-dash-cat1') ? document.getElementById('list-dash-cat1').value : '';
     const fc2 = document.getElementById('list-dash-cat2') ? document.getElementById('list-dash-cat2').value : '';
     const fc3 = document.getElementById('list-dash-cat3') ? document.getElementById('list-dash-cat3').value : '';
-    const fText = document.getElementById('filter-dash-drugs') ? document.getElementById('filter-dash-drugs').value.toLowerCase() : '';
+    const fText = document.getElementById('filter-dash-drugs') ? document.getElementById('filter-dash-drugs').value.toLowerCase().trim() : '';
+    
+    // 【優化】支援多組關鍵字空白分隔搜尋
+    const dashKeywords = fText ? fText.split(/\s+/) : [];
 
     const dashDrugs = STORE.drugs.filter(d => {
         if (fd && (d.domain || 'PED') !== fd) return false;
         if (fc1 && d.cat_1 !== fc1) return false;
         if (fc2 && d.cat_2 !== fc2) return false;
         if (fc3 && d.cat_3 !== fc3) return false;
-        if (fText) {
-            const searchStr = ((d.drug_code||'')+(d.local_name||'')+(d.generic_name||'')+(d.brand_name||'')+(d.common_brand||'')+(d.cat_1||'')).toLowerCase();
-            if (!searchStr.includes(fText)) return false;
+        if (dashKeywords.length > 0) {
+            // 【優化】搜尋字串包含全部需要的欄位
+            const searchStr = `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''} ${d.cat_1||''}`.toLowerCase();
+            if (!dashKeywords.every(kw => searchStr.includes(kw))) return false;
         }
         return true;
     });
@@ -62,7 +66,6 @@ window.renderDrugsList = function() {
         let domText = dom === 'NICU' ? '新生兒 ICU' : (dom === 'ADU' ? '成人抗生素' : '小兒科');
         let domColor = dom === 'NICU' ? 'bg-pink-100 text-pink-800' : (dom === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
         
-        // 快速上線/未上線切換按鈕
         const statusHtml = d.status === 'Y' 
             ? `<button onclick="toggleDrugStatus('${d.drug_id}', 'Y', event)" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-green-200 border border-green-300">上線中</button>`
             : `<button onclick="toggleDrugStatus('${d.drug_id}', 'N', event)" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-200 border border-red-300">未上線</button>`;
@@ -70,7 +73,7 @@ window.renderDrugsList = function() {
         return `<tr class="hover:bg-blue-50 transition">
             <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
             <td class="pt-3"><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span></td>
-            <td class="pt-3"><div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div><div class="text-[10px] text-gray-500">${d.local_name||''} ${d.common_brand?'('+d.common_brand+')':''}</div></td>
+            <td class="pt-3"><div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div><div class="text-[10px] text-gray-500">${d.local_name||''} ${d.brand_name?'('+d.brand_name+')':''}</div></td>
             <td class="pt-3">${statusHtml}</td>
             <td class="pt-3 flex gap-2">
                 <button onclick="goToDrugView('${d.drug_id}')" class="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200"><i class="fa-solid fa-pen"></i> 編輯</button>
@@ -82,7 +85,45 @@ window.renderDrugsList = function() {
     if(typeof renderDashFormulas === 'function') renderDashFormulas(dashDrugs);
 };
 
-// 【新增】藥品狀態快速切換
+window.renderDashFormulas = function(dashDrugs) {
+    const dashFormulasList = document.getElementById('list-dash-formulas');
+    if (!dashFormulasList) return;
+
+    const validIds = new Set();
+    dashDrugs.forEach(d => { validIds.add(String(d.drug_id).trim().toLowerCase()); if (d.drug_code) validIds.add(String(d.drug_code).trim().toLowerCase()); });
+
+    const dashFormulas = STORE.formulas.filter(f => validIds.has(String(f.drug_id).trim().toLowerCase()));
+
+    dashFormulasList.innerHTML = dashFormulas.length === 0 ? 
+        `<tr><td colspan="5" class="text-center text-gray-400 py-4">目前篩選條件下無對應公式</td></tr>` :
+        dashFormulas.map(f => {
+            const targetId = String(f.drug_id).trim().toLowerCase();
+            const d = dashDrugs.find(x => String(x.drug_id).trim().toLowerCase() === targetId || String(x.drug_code).trim().toLowerCase() === targetId); 
+            const actualDrugId = d ? d.drug_id : f.drug_id;
+            
+            // 【優化】公式總表顯示豐富的藥品資訊
+            let drugNameHtml = '<div class="text-gray-400">未知藥品 (舊綁定)</div>';
+            if (d) {
+                drugNameHtml = `
+                    <div class="font-bold text-orange-600 mb-0.5">${d.drug_code||'--'}</div>
+                    <div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div>
+                    <div class="text-[10px] text-gray-500 leading-tight mt-0.5">${d.local_name||''}<br/>${d.brand_name||''}</div>
+                `;
+            }
+
+            return `<tr class="hover:bg-purple-50 transition">
+                <td class="pt-3">${drugNameHtml}</td>
+                <td class="pt-3"><i class="fa-solid fa-pen text-xs text-gray-400 mr-1"></i> <span class="font-bold text-purple-900">${f.formula_name}</span></td>
+                <td class="pt-3 font-mono text-[11px] text-blue-800 bg-blue-50 p-1 rounded">Min: ${f.formula_min||'--'}<br>Max: ${f.formula_max||'--'}</td>
+                <td class="pt-3 text-xs text-red-600">單:${f.single_max||'--'} ${f.single_max_unit||''}<br>日:${f.daily_max||'--'} ${f.daily_max_unit||''}</td>
+                <td class="pt-3">
+                    <button onclick="goToFormulaEdit('${actualDrugId}', '${f.formula_id}')" class="text-blue-600 hover:text-blue-800 mr-2 font-bold text-xs bg-blue-50 px-2 py-1 rounded border border-blue-200"><i class="fa-solid fa-pen"></i> 編輯</button>
+                    <button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700 text-xs px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+};
+
 window.toggleDrugStatus = async function(drugId, currentStatus, event) {
     event.stopPropagation();
     const newStatus = currentStatus === 'Y' ? 'N' : 'Y';
@@ -103,7 +144,6 @@ window.toggleDrugStatus = async function(drugId, currentStatus, event) {
     await sendPost(payload); 
 };
 
-// 【新增】統一的返回儀表板機制
 window.returnToDashboard = function() {
     switchTab('dashboard');
     scrollToTop();
@@ -173,11 +213,17 @@ window.viewDrug = function(drugId) {
     stateTags.relatedDrugs = d.related_drugs ? d.related_drugs.split(',').filter(Boolean) : [];
     renderTagsUI('relatedDrugs');
 
-    if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = false; // 為了方便直接預設為可編輯
+    if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = false; 
     if (document.getElementById('btn-save-drug')) {
         document.getElementById('btn-save-drug').classList.remove('hidden');
         document.getElementById('btn-save-drug').innerText = "更新儲存"; 
     }
+    
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.remove('hidden'); 
+    
+    if (typeof renderCurrentDrugFormulas === 'function') renderCurrentDrugFormulas(d.drug_id, d.drug_code);
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.remove('hidden');
 
     scrollToTop();
 };
@@ -208,10 +254,15 @@ window.resetDrugForm = function() {
     if(document.getElementById('input-relatedDrugs')) document.getElementById('input-relatedDrugs').value = '';
 
     if (document.getElementById('drug-fieldset')) document.getElementById('drug-fieldset').disabled = false;
+    if (document.getElementById('btn-edit-drug-mode')) document.getElementById('btn-edit-drug-mode').classList.add('hidden');
+    if (document.getElementById('btn-manage-formula')) document.getElementById('btn-manage-formula').classList.add('hidden'); 
+    
     if (document.getElementById('btn-save-drug')) {
         document.getElementById('btn-save-drug').classList.remove('hidden');
         document.getElementById('btn-save-drug').innerText = "儲存新藥品"; 
     }
+    
+    if (document.getElementById('drug-formulas-section')) document.getElementById('drug-formulas-section').classList.add('hidden');
 };
 
 window.saveDrug = async function() {
@@ -227,7 +278,7 @@ window.saveDrug = async function() {
     
     if(!payload.drug_code || !payload.generic_name || !payload.domain) return alert("請務必填寫：【所屬科別】、【藥品代碼】與【一般名稱(原學名)】！");
     await sendPost(payload); 
-    returnToDashboard(); // 存檔後一鍵回歸總表
+    returnToDashboard(); 
 };
 
 window.removeCustomTag = function(type, val) {
@@ -258,10 +309,20 @@ window.setupDrugDropdowns = function() {
     const finalInput = document.getElementById(`input-relatedDrugs`), finalDrop = document.getElementById(`drop-relatedDrugs`);
 
     const updateDrop = () => {
-        const keyword = finalInput.value.toLowerCase();
-        const filtered = STORE.drugs.filter(item => (`${item.drug_code||''} ${item.local_name||item.generic_name}`).toLowerCase().includes(keyword));
+        const keyword = finalInput.value.toLowerCase().trim();
+        const keywords = keyword ? keyword.split(/\s+/) : [];
+        
+        const filtered = STORE.drugs.filter(item => {
+            if(keywords.length === 0) return true;
+            const searchStr = `${item.drug_code||''} ${item.local_name||''} ${item.generic_name||''} ${item.brand_name||''} ${item.common_brand||''}`.toLowerCase();
+            return keywords.every(kw => searchStr.includes(kw));
+        });
+        
         const html = filtered.map(item => {
-            const val = item.local_name||item.generic_name, label = `${item.drug_code||''} ${val}`.trim();
+            const val = item.local_name||item.generic_name;
+            // 【優化】關聯藥品下拉選單顯示豐富資訊
+            const label = `<span class="text-orange-600 font-bold mr-1">${item.drug_code||''}</span> <span class="text-blue-900 font-bold">${item.generic_name||''}</span> <span class="text-gray-500 text-xs ml-1">${item.local_name||''} ${item.brand_name||''}</span>`;
+            
             if (stateTags.relatedDrugs.includes(val)) return ''; 
             return `<div class="p-2 text-sm hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 truncate" onclick="addCustomTag('relatedDrugs', '${val.replace(/'/g, "\\'")}')">${label}</div>`;
         }).join('');
