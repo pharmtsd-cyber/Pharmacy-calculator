@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    if(document.getElementById('btn-show-add-formula')) document.getElementById('btn-show-add-formula').onclick = () => { resetFormulaForm(); document.getElementById('formula-editor-container').classList.remove('hidden'); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
-    if(document.getElementById('btn-close-formula-editor')) document.getElementById('btn-close-formula-editor').onclick = () => document.getElementById('formula-editor-container').classList.add('hidden');
+    if(document.getElementById('btn-show-add-formula')) document.getElementById('btn-show-add-formula').onclick = () => { resetFormulaForm(); document.getElementById('formula-editor-container').classList.remove('hidden'); scrollToBottom(); };
+    if(document.getElementById('btn-close-formula-editor')) document.getElementById('btn-close-formula-editor').onclick = resetFormulaForm;
     if(document.getElementById('btn-save-formula')) document.getElementById('btn-save-formula').onclick = saveFormula;
 
     let ACTIVE_FORMULA_INPUT = 'admin-formula-min';
@@ -20,21 +20,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-window.openFormulaManager = function(drugId) {
-    // 支援舊的 drug_code 或新的 drug_id
+window.openFormulaManager = function(drugId, formulaIdToEdit = null) {
     CONTEXT_DRUG = STORE.drugs.find(d => d.drug_id === drugId || d.drug_code === drugId);
     if (!CONTEXT_DRUG) return;
+    
     document.getElementById('formula-context-name').innerText = CONTEXT_DRUG.local_name || CONTEXT_DRUG.generic_name || '未命名藥品';
-    document.querySelectorAll('.nav-item, .tab-content').forEach(el => el.classList.remove('active'));
-    document.getElementById('formulas').classList.add('active');
-    document.getElementById('nav-formulas').classList.remove('hidden'); document.getElementById('nav-formulas').classList.add('active');
-    document.getElementById('formula-editor-container').classList.add('hidden');
-    renderLocalFormulas(); window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // 【修改核心】動態綁定「返回該藥品維護」的按鈕行為
+    const backBtn = document.querySelector('#formulas button');
+    if(backBtn) {
+        backBtn.onclick = (e) => {
+            e.preventDefault();
+            viewDrug(CONTEXT_DRUG.drug_id);
+        };
+    }
+    
+    switchTab('formulas');
+    renderLocalFormulas(); 
+    
+    // 【修改核心】如果帶有 formulaId，直接啟動編輯模式並捲動
+    if (formulaIdToEdit) {
+        editFormula(formulaIdToEdit);
+    } else {
+        document.getElementById('formula-editor-container').classList.add('hidden');
+        scrollToTop();
+    }
 };
 
 window.renderLocalFormulas = function() {
     if (!CONTEXT_DRUG) return;
-    // 【修復核心】支援舊公式比對
     const localFormulas = STORE.formulas.filter(f => f.drug_id === CONTEXT_DRUG.drug_id || f.drug_id === CONTEXT_DRUG.drug_code);
     document.getElementById('list-local-formulas').innerHTML = localFormulas.length === 0 
         ? `<tr><td colspan="4" class="text-center text-gray-400 py-4">此藥品尚未建立任何公式</td></tr>`
@@ -58,8 +72,10 @@ window.editFormula = function(id) {
     
     document.getElementById('formula-editor-title').innerText = "編輯公式：" + f.formula_name;
     document.getElementById('btn-save-formula').innerText = "更新儲存區間"; 
+    
+    // 【修改核心】打開容器，並平滑滾動至底端
     document.getElementById('formula-editor-container').classList.remove('hidden'); 
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    scrollToBottom();
 };
 
 window.resetFormulaForm = function() {
@@ -67,6 +83,10 @@ window.resetFormulaForm = function() {
     ['admin-formula-name','admin-result-unit','admin-remark','formula-single-max','formula-single-unit','formula-daily-max','formula-daily-unit','admin-formula-min','admin-formula-max'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('admin-test-inputs').innerHTML = '請先輸入公式'; document.getElementById('admin-test-result').innerText = '-- ~ --';
     document.getElementById('formula-editor-title').innerText = "新增計算公式"; document.getElementById('btn-save-formula').innerText = "儲存區間公式";
+    
+    // 取消編輯時，關閉編輯器並平滑滾動回清單
+    document.getElementById('formula-editor-container').classList.add('hidden');
+    scrollToTop();
 };
 
 window.saveFormula = async function() {
@@ -77,7 +97,7 @@ window.saveFormula = async function() {
         single_max: document.getElementById('formula-single-max').value, single_max_unit: document.getElementById('formula-single-unit').value, daily_max: document.getElementById('formula-daily-max').value, daily_max_unit: document.getElementById('formula-daily-unit').value, remark: document.getElementById('admin-remark').value
     };
     if(!payload.formula_name || !payload.formula_min) return alert("方法名稱與下限公式必填");
-    await sendPost(payload); resetFormulaForm(); document.getElementById('formula-editor-container').classList.add('hidden');
+    await sendPost(payload); resetFormulaForm();
 };
 
 window.renderParameterPad = function() {
