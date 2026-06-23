@@ -6,24 +6,55 @@ Object.assign(STORE, { staff: [], categories: [], announcements: [], forms: [], 
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login').onclick = handleLogin;
-    
-    // 綁定側邊欄切換
+    document.getElementById('btn-open-pw').onclick = () => document.getElementById('pw-modal').classList.remove('hidden');
+    document.getElementById('btn-pw-cancel').onclick = () => document.getElementById('pw-modal').classList.add('hidden');
+    document.getElementById('btn-pw-save').onclick = handleChangePassword;
+
+    // 綁定側邊欄切換 (改用平滑的 switchTab)
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', () => {
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            item.classList.add('active');
-            document.getElementById(item.getAttribute('data-target')).classList.add('active');
-            if (item.getAttribute('data-target') !== 'formulas') {
-                const navFormulas = document.getElementById('nav-formulas');
-                if(navFormulas) navFormulas.classList.add('hidden');
-            }
+            switchTab(item.getAttribute('data-target'));
         });
     });
 
-    // 【新增】檢查免登入狀態
     checkAutoLogin();
 });
+
+// 【新增】全域分頁切換控制器
+window.switchTab = function(targetId) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    
+    const targetNav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+    if(targetNav) targetNav.classList.add('active');
+    
+    const targetContent = document.getElementById(targetId);
+    if(targetContent) targetContent.classList.add('active');
+    
+    const navFormulas = document.getElementById('nav-formulas');
+    if (targetId !== 'formulas') {
+        if(navFormulas) navFormulas.classList.add('hidden');
+    } else {
+        if(navFormulas) {
+            navFormulas.classList.remove('hidden');
+            navFormulas.classList.add('active');
+        }
+    }
+};
+
+// 【新增】全域平滑滾動引擎 (解決畫面消失/找不到視窗的問題)
+window.scrollToTop = function() {
+    const main = document.querySelector('main');
+    if(main) main.scrollTo({ top: 0, behavior: 'smooth' });
+};
+window.scrollToBottom = function() {
+    const main = document.querySelector('main');
+    if(main) main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' });
+};
+window.scrollToElement = function(id) {
+    const el = document.getElementById(id);
+    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
 
 async function checkAutoLogin() {
     const savedUser = localStorage.getItem('pharma_user');
@@ -56,7 +87,7 @@ async function handleLogin() {
         const result = await response.json();
         if (result.status === "success") {
             CURRENT_USER = result;
-            localStorage.setItem('pharma_user', JSON.stringify(CURRENT_USER)); // 儲存登入狀態
+            localStorage.setItem('pharma_user', JSON.stringify(CURRENT_USER)); 
             
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('dash-name').innerText = CURRENT_USER.name;
@@ -71,20 +102,15 @@ async function handleLogin() {
     } catch(e) { msg.innerText = "網路連線異常"; } finally { btn.innerText = "登入系統"; btn.disabled = false; }
 }
 
-// 【新增】處理跳轉並清除網址參數
 function handleUrlJump() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('drug_id')) {
-        const targetTab = document.querySelector('[data-target="drugs"]');
-        if(targetTab) targetTab.click();
         if(typeof window.viewDrug === 'function') window.viewDrug(urlParams.get('drug_id'));
-        
-        // 關鍵：跳轉完成後立刻把網址清乾淨，才不會造成重複渲染或清單消失
+        // 核心：跳轉後立刻把網址清空，防止重整時不斷觸發
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
-// 【新增】登出功能
 window.logout = function() {
     localStorage.removeItem('pharma_user');
     window.location.reload();
@@ -119,7 +145,9 @@ async function loadAllData() {
 window.sendPost = async function(payload) {
     const res = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
     const result = await res.json();
-    if(result.status === 'success') { alert("操作成功！"); loadAllData(); } else { alert("失敗：" + result.message); }
+    if(result.status === 'success') { 
+        loadAllData(); // 安靜重載，不再跳出 annoying 的 alert 中斷體驗
+    } else { alert("失敗：" + result.message); }
 };
 
 window.deleteRecord = async function(action, id) {
