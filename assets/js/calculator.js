@@ -4,7 +4,6 @@ let calculatedMin = null;
 let calculatedMax = null;
 let currentDomain = 'home'; 
 
-// 【新增】防抖引擎 (Debounce)：延遲執行，避免狂打字時畫面卡頓
 window.debounce = function(func, delay) {
     let timer;
     return function(...args) {
@@ -80,6 +79,25 @@ async function initializeCalculator() {
             STORE.settings = {}; if(settingsData) settingsData.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
             
             renderHomeContent(); setupFilters(); applyFilters();
+
+            // 【新增】還原跳轉前的狀態記憶
+            const savedStateStr = localStorage.getItem('pharma_front_state');
+            if(savedStateStr) {
+                try {
+                    const savedState = JSON.parse(savedStateStr);
+                    if(savedState.domain && savedState.domain !== 'home') {
+                        const tab = document.querySelector(`.front-nav[data-target="${savedState.domain}"]`);
+                        if(tab) tab.click(); 
+                    }
+                    if(savedState.drugId) {
+                        const d = STORE.drugs.find(x => x.drug_id === savedState.drugId);
+                        if(d) selectDrug(d);
+                    }
+                } catch(e) {}
+                // 還原後清除狀態
+                localStorage.removeItem('pharma_front_state');
+            }
+
         } else {
             loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; loadingStatus.classList.add('text-red-500');
         }
@@ -127,8 +145,6 @@ function setupFilters() {
     });
 
     cat3Select.addEventListener('change', applyFilters); 
-    
-    // 【套用防抖】延遲 300 毫秒才執行搜尋
     searchInput.addEventListener('input', window.debounce(applyFilters, 300));
 }
 
@@ -349,4 +365,28 @@ window.submitFeedback = async function() {
     try { await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'saveFeedback', mode: 'add', drug_info: contextInfo, content: content }) }); alert("回報成功！感謝您的協助。"); document.getElementById('feedback-modal').classList.add('hidden');
     } catch(e) { alert("連線失敗"); } btn.innerText = '送出回報'; btn.disabled = false;
 };
-window.goToAdminEdit = function() { if(!currentDrug) return; window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
+
+// 【新增】保存目前畫面狀態 (LocalStorage)
+window.saveCurrentState = function() {
+    if (!currentDrug) return;
+    const state = {
+        domain: currentDomain,
+        drugId: currentDrug.drug_id
+    };
+    localStorage.setItem('pharma_front_state', JSON.stringify(state));
+};
+
+// 【修改】帶出資訊修改
+window.goToAdminEdit = function() { 
+    if(!currentDrug) return; 
+    saveCurrentState();
+    window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; 
+};
+
+// 【修改】帶出公式修改 (利用 dash_filter 讓後台自動篩選該藥品)
+window.goToAdminFormula = function() {
+    if(!currentDrug) return;
+    saveCurrentState();
+    const filterStr = currentDrug.drug_code || currentDrug.local_name || currentDrug.generic_name;
+    window.location.href = `./admin.html?dash_filter=${encodeURIComponent(filterStr)}`;
+};
