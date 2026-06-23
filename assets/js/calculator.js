@@ -2,7 +2,7 @@ let currentDrug = null;
 let currentFormula = null;
 let calculatedMin = null;
 let calculatedMax = null;
-let currentDomain = 'home'; // 預設停在首頁
+let currentDomain = 'home'; 
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('calc-view').classList.remove('hidden');
                 document.getElementById('calc-domain-title').innerText = item.innerText.trim();
                 
-                // 切換計算機時，重設篩選並重新渲染
                 document.getElementById('search-input').value = '';
                 document.getElementById('filter-cat1').value = '';
                 document.getElementById('filter-cat2').innerHTML = '<option value="">-- 所有第二層分類 --</option>';
@@ -123,8 +122,6 @@ function applyFilters() {
 
     const filtered = STORE.drugs.filter(d => {
         if (d.status && d.status.toUpperCase() !== 'Y') return false;
-        
-        // 【核心過濾器修正】相容舊資料：若未填寫 domain，預設歸類於 PED(小兒科)
         const drugDomain = d.domain || 'PED';
         if (currentDomain !== 'home' && drugDomain !== currentDomain) return false; 
         
@@ -212,7 +209,6 @@ function selectDrug(drug) {
     }
     formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span></div>`;
     
-    // 【修改】將參考仿單改為純文字顯示
     const refContainer = document.getElementById('drug-ref-container');
     if (drug.reference_url) {
         document.getElementById('drug-ref-text').innerText = drug.reference_url;
@@ -233,7 +229,15 @@ function selectDrug(drug) {
         } else suppContainer.classList.add('hidden');
     }
 
-    const drugFormulas = STORE.formulas.filter(f => f.drug_id === drug.drug_id || f.drug_id === drug.drug_code);
+    // 【修復核心】支援新舊版 ID (drug_id 或 drug_code) 雙向比對，加入 String() 和 trim() 確保比對不會因為空白失敗
+    const targetId = String(drug.drug_id).trim();
+    const targetCode = drug.drug_code ? String(drug.drug_code).trim() : null;
+    
+    const drugFormulas = STORE.formulas.filter(f => {
+        const fId = String(f.drug_id).trim();
+        return fId === targetId || (targetCode && fId === targetCode);
+    });
+
     const selectEl = document.getElementById('formula-select');
     selectEl.innerHTML = '';
 
@@ -260,6 +264,7 @@ function selectDrug(drug) {
 
 function renderDynamicParameters(formula) {
     if (!formula) return;
+    
     document.getElementById('prescribed-dose').value = '';
     document.getElementById('dose-eval-msg').classList.add('hidden');
     resetResult();
@@ -311,6 +316,7 @@ function renderDynamicParameters(formula) {
 
 function executeCalculation() {
     if (!currentFormula) return;
+
     let fMin = currentFormula.formula_min || '', fMax = currentFormula.formula_max || '';
     const inputs = document.querySelectorAll('.param-input');
     let allFilled = true;
