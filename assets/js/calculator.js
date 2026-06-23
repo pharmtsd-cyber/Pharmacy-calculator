@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
     document.getElementById('prescribed-dose').addEventListener('input', checkPrescriptionSafety);
     
+    // 左側選單切換邏輯
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.front-nav').forEach(n => {
@@ -185,13 +186,16 @@ function selectDrug(drug) {
         relContainer.classList.remove('hidden');
     } else relContainer.classList.add('hidden');
 
+    // 【修復】使用 appendChild 安全追加，避免 DOM 結構改變導致 NotFoundError
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
     if (!formRow) {
-        formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'border-t border-gray-100 mt-2 pt-2 flex flex-col gap-1';
-        rightMetaContainer.insertBefore(formRow, document.getElementById('drug-related-container'));
+        formRow = document.createElement('div'); 
+        formRow.id = 'drug-form-row'; 
+        formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; // 修改樣式
+        rightMetaContainer.appendChild(formRow); // 【安全綁定】
     }
-    formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span></div>`;
+    formRow.innerHTML = `<span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span>`;
     
     const refContainer = document.getElementById('drug-ref-container');
     if (drug.reference_url) { document.getElementById('drug-ref-text').innerText = drug.reference_url; refContainer.classList.remove('hidden'); } else refContainer.classList.add('hidden');
@@ -202,7 +206,6 @@ function selectDrug(drug) {
         if (drug.supplemental_info) { document.getElementById('drug-supplemental').innerText = drug.supplemental_info; suppContainer.classList.remove('hidden'); } else suppContainer.classList.add('hidden');
     }
 
-    // 【修復核心】強制字串比對保護：轉小寫、去空白，確保萬無一失
     const targetId = String(drug.drug_id || '').trim().toLowerCase();
     const targetCode = String(drug.drug_code || '').trim().toLowerCase();
     
