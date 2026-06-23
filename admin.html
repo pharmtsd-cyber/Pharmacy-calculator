@@ -290,8 +290,21 @@
 
                 <div class="flex gap-2 mt-4">
                     <button id="btn-edit-drug-mode" onclick="enableDrugEditMode()" type="button" class="hidden bg-orange-500 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-orange-600 transition"><i class="fa-solid fa-unlock mr-1"></i> 開始編輯此藥品</button>
+                    <button id="btn-manage-formula" onclick="jumpToFormula()" type="button" class="hidden bg-purple-600 text-white px-5 py-2 rounded text-sm font-bold shadow hover:bg-purple-700 transition"><i class="fa-solid fa-flask mr-1"></i> 管理此藥品公式</button>
+                    
                     <button id="btn-save-drug" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">儲存藥品</button>
                     <button id="btn-cancel-drug" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消返回</button>
+                </div>
+                
+                <div id="drug-formulas-section" class="hidden mt-6 bg-white rounded-lg shadow-sm border overflow-hidden">
+                    <div class="p-3 bg-purple-50 border-b border-purple-100 flex items-center justify-between">
+                        <span class="font-bold text-sm text-purple-900"><i class="fa-solid fa-flask text-purple-600 mr-1"></i> 此藥品的公式清單 (點擊列表直接前往編輯)</span>
+                        <button onclick="jumpToFormula()" class="bg-purple-600 text-white px-4 py-1.5 rounded text-xs font-bold shadow hover:bg-purple-700 transition"><i class="fa-solid fa-plus mr-1"></i> 新增公式</button>
+                    </div>
+                    <table class="w-full data-table text-sm">
+                        <thead><tr><th>方法名稱</th><th>區間公式</th><th>絕對上限</th><th>操作</th></tr></thead>
+                        <tbody id="list-current-drug-formulas"></tbody>
+                    </table>
                 </div>
             </div>
             
