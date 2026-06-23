@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
     document.getElementById('prescribed-dose').addEventListener('input', checkPrescriptionSafety);
     
-    // 左側選單切換邏輯
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.front-nav').forEach(n => {
@@ -55,17 +54,12 @@ async function initializeCalculator() {
 
         if (drugsData && paramsData && formulasData) {
             STORE.drugs = drugsData; STORE.parameters = paramsData; STORE.formulas = formulasData;
-            STORE.categories = catData || []; 
-            STORE.announcements = annoData || [];
-            STORE.settings = {};
-            if(settingsData) settingsData.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
+            STORE.categories = catData || []; STORE.announcements = annoData || [];
+            STORE.settings = {}; if(settingsData) settingsData.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
             
-            renderHomeContent();
-            setupFilters();
-            applyFilters();
+            renderHomeContent(); setupFilters(); applyFilters();
         } else {
-            loadingStatus.innerText = "資料載入失敗，請確認 API 網址。";
-            loadingStatus.classList.add('text-red-500');
+            loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; loadingStatus.classList.add('text-red-500');
         }
     } catch (error) { loadingStatus.innerText = "系統發生錯誤。"; }
 }
@@ -88,7 +82,6 @@ function renderHomeContent() {
 function setupFilters() {
     const cat1Select = document.getElementById('filter-cat1'), cat2Select = document.getElementById('filter-cat2'), cat3Select = document.getElementById('filter-cat3');
     const searchInput = document.getElementById('search-input');
-
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     cat1s.forEach(c => cat1Select.add(new Option(c, c)));
 
@@ -108,12 +101,10 @@ function setupFilters() {
         if (val2) {
             const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === val1 && c.cat_2 === val2).map(c => c.cat_3).filter(Boolean))];
             cat3s.forEach(c => cat3Select.add(new Option(c, c))); cat3Select.disabled = false;
-        } else cat3Select.disabled = true;
-        applyFilters();
+        } else cat3Select.disabled = true; applyFilters();
     });
 
-    cat3Select.addEventListener('change', applyFilters);
-    searchInput.addEventListener('input', applyFilters);
+    cat3Select.addEventListener('change', applyFilters); searchInput.addEventListener('input', applyFilters);
 }
 
 function applyFilters() {
@@ -124,7 +115,6 @@ function applyFilters() {
         if (d.status && d.status.toUpperCase() !== 'Y') return false;
         const drugDomain = d.domain || 'PED';
         if (currentDomain !== 'home' && drugDomain !== currentDomain) return false; 
-        
         if (c1 && d.cat_1 !== c1) return false;
         if (c2 && d.cat_2 !== c2) return false;
         if (c3 && d.cat_3 !== c3) return false;
@@ -139,13 +129,10 @@ function applyFilters() {
 }
 
 function renderDrugList(drugsToRender) {
-    const treeContainer = document.getElementById('category-tree');
-    treeContainer.innerHTML = '';
+    const treeContainer = document.getElementById('category-tree'); treeContainer.innerHTML = '';
     if (drugsToRender.length === 0) return treeContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">無符合的篩選結果</p>';
 
-    const ul = document.createElement('ul');
-    ul.className = 'flex flex-col gap-3 p-1';
-
+    const ul = document.createElement('ul'); ul.className = 'flex flex-col gap-3 p-1';
     drugsToRender.forEach(drug => {
         const li = document.createElement('li');
         li.className = 'p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded cursor-pointer transition shadow-sm';
@@ -160,10 +147,8 @@ function renderDrugList(drugsToRender) {
                 <div class="flex"><span class="w-16 font-bold text-gray-400">現有商品</span><span class="font-medium text-gray-800 truncate" title="${drug.brand_name || '--'}">${drug.brand_name || '--'}</span></div>
                 <div class="flex"><span class="w-16 font-bold text-gray-400">中文商品</span><span class="font-medium text-gray-800 truncate" title="${drug.local_name || '--'}">${drug.local_name || '--'}</span></div>
                 <div class="flex"><span class="w-16 font-bold text-gray-400">原廠商品</span><span class="font-medium text-gray-800 truncate" title="${drug.common_brand || '--'}">${drug.common_brand || '--'}</span></div>
-            </div>
-        `;
-        li.onclick = () => selectDrug(drug);
-        ul.appendChild(li);
+            </div>`;
+        li.onclick = () => selectDrug(drug); ul.appendChild(li);
     });
     treeContainer.appendChild(ul);
 }
@@ -176,8 +161,7 @@ function selectDrug(drug) {
     document.getElementById('drug-right-cats').innerHTML = `
         ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}
         ${drug.cat_2 ? `<span class="bg-blue-50 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_2}</span>` : ''}
-        ${drug.cat_3 ? `<span class="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_3}</span>` : ''}
-    `;
+        ${drug.cat_3 ? `<span class="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_3}</span>` : ''}`;
     
     document.getElementById('drug-title').innerText = drug.generic_name || '無學名';
     document.getElementById('drug-sub1').innerText = drug.brand_name || '--';
@@ -210,32 +194,21 @@ function selectDrug(drug) {
     formRow.innerHTML = `<div class="flex"><span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span></div>`;
     
     const refContainer = document.getElementById('drug-ref-container');
-    if (drug.reference_url) {
-        document.getElementById('drug-ref-text').innerText = drug.reference_url;
-        refContainer.classList.remove('hidden');
-    } else refContainer.classList.add('hidden');
-
+    if (drug.reference_url) { document.getElementById('drug-ref-text').innerText = drug.reference_url; refContainer.classList.remove('hidden'); } else refContainer.classList.add('hidden');
     const instContainer = document.getElementById('drug-dose-inst-container');
-    if (drug.dose_instruction) {
-        document.getElementById('drug-dose-inst').innerText = drug.dose_instruction;
-        instContainer.classList.remove('hidden');
-    } else instContainer.classList.add('hidden');
-
+    if (drug.dose_instruction) { document.getElementById('drug-dose-inst').innerText = drug.dose_instruction; instContainer.classList.remove('hidden'); } else instContainer.classList.add('hidden');
     const suppContainer = document.getElementById('drug-supplemental-container');
     if (suppContainer) {
-        if (drug.supplemental_info) {
-            document.getElementById('drug-supplemental').innerText = drug.supplemental_info;
-            suppContainer.classList.remove('hidden');
-        } else suppContainer.classList.add('hidden');
+        if (drug.supplemental_info) { document.getElementById('drug-supplemental').innerText = drug.supplemental_info; suppContainer.classList.remove('hidden'); } else suppContainer.classList.add('hidden');
     }
 
-    // 【修復核心】支援新舊版 ID (drug_id 或 drug_code) 雙向比對，加入 String() 和 trim() 確保比對不會因為空白失敗
-    const targetId = String(drug.drug_id).trim();
-    const targetCode = drug.drug_code ? String(drug.drug_code).trim() : null;
+    // 【修復核心】強制字串比對保護：轉小寫、去空白，確保萬無一失
+    const targetId = String(drug.drug_id || '').trim().toLowerCase();
+    const targetCode = String(drug.drug_code || '').trim().toLowerCase();
     
     const drugFormulas = STORE.formulas.filter(f => {
-        const fId = String(f.drug_id).trim();
-        return fId === targetId || (targetCode && fId === targetCode);
+        const fId = String(f.drug_id || '').trim().toLowerCase();
+        return fId !== '' && (fId === targetId || fId === targetCode);
     });
 
     const selectEl = document.getElementById('formula-select');
@@ -249,60 +222,40 @@ function selectDrug(drug) {
 
     drugFormulas.forEach(f => {
         const option = document.createElement('option');
-        option.value = f.formula_id; option.innerText = f.formula_name;
-        selectEl.appendChild(option);
+        option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
     });
 
     selectEl.onchange = (e) => {
-        currentFormula = drugFormulas.find(f => f.formula_id === e.target.value);
-        renderDynamicParameters(currentFormula);
+        currentFormula = drugFormulas.find(f => f.formula_id === e.target.value); renderDynamicParameters(currentFormula);
     };
 
-    currentFormula = drugFormulas[0];
-    renderDynamicParameters(currentFormula);
+    currentFormula = drugFormulas[0]; renderDynamicParameters(currentFormula);
 }
 
 function renderDynamicParameters(formula) {
     if (!formula) return;
-    
-    document.getElementById('prescribed-dose').value = '';
-    document.getElementById('dose-eval-msg').classList.add('hidden');
-    resetResult();
-
+    document.getElementById('prescribed-dose').value = ''; document.getElementById('dose-eval-msg').classList.add('hidden'); resetResult();
     document.getElementById('formula-remark').innerText = formula.remark ? `*指引備註：${formula.remark}` : '';
-    document.getElementById('result-unit').innerText = formula.result_unit || '';
-    document.querySelector('.prescribed-unit-display').innerText = formula.result_unit || '';
+    document.getElementById('result-unit').innerText = formula.result_unit || ''; document.querySelector('.prescribed-unit-display').innerText = formula.result_unit || '';
 
-    const alertBox = document.getElementById('absolute-max-alert');
-    let hasAlert = false;
-    if (formula.single_max) {
-        document.getElementById('single-max-text').innerText = `單次最大：${formula.single_max} ${formula.single_max_unit||''}`;
-        hasAlert = true;
+    const alertBox = document.getElementById('absolute-max-alert'); let hasAlert = false;
+    if (formula.single_max) { document.getElementById('single-max-text').innerText = `單次最大：${formula.single_max} ${formula.single_max_unit||''}`; hasAlert = true;
     } else document.getElementById('single-max-text').innerText = '';
-    if (formula.daily_max) {
-        document.getElementById('daily-max-text').innerText = `單日最大：${formula.daily_max} ${formula.daily_max_unit||''}`;
-        hasAlert = true;
+    if (formula.daily_max) { document.getElementById('daily-max-text').innerText = `單日最大：${formula.daily_max} ${formula.daily_max_unit||''}`; hasAlert = true;
     } else document.getElementById('daily-max-text').innerText = '';
     if (hasAlert) alertBox.classList.remove('hidden'); else alertBox.classList.add('hidden');
 
-    const paramContainer = document.getElementById('dynamic-parameters');
-    paramContainer.innerHTML = '';
-
+    const paramContainer = document.getElementById('dynamic-parameters'); paramContainer.innerHTML = '';
     const combinedFormula = (formula.formula_min || '') + " " + (formula.formula_max || '');
-    const paramRegex = /{([^}]+)}/g;
-    const requiredCodes = new Set();
-    let match;
+    const paramRegex = /{([^}]+)}/g; const requiredCodes = new Set(); let match;
     while ((match = paramRegex.exec(combinedFormula)) !== null) requiredCodes.add(match[1]);
 
     if (requiredCodes.size === 0) { executeCalculation(); return; }
 
     requiredCodes.forEach(code => {
         const paramDef = STORE.parameters.find(p => p.param_code === code);
-        const paramName = paramDef ? paramDef.param_name : code;
-        const paramUnit = paramDef ? paramDef.default_unit : '';
-
-        const div = document.createElement('div');
-        div.className = 'flex flex-col gap-1';
+        const paramName = paramDef ? paramDef.param_name : code; const paramUnit = paramDef ? paramDef.default_unit : '';
+        const div = document.createElement('div'); div.className = 'flex flex-col gap-1';
         div.innerHTML = `
             <label class="text-xs font-bold text-[#1B365D]">${paramName} (${paramUnit})</label>
             <input type="number" data-code="${code}" step="any" min="0" placeholder="請輸入數值..." 
@@ -316,18 +269,13 @@ function renderDynamicParameters(formula) {
 
 function executeCalculation() {
     if (!currentFormula) return;
-
     let fMin = currentFormula.formula_min || '', fMax = currentFormula.formula_max || '';
-    const inputs = document.querySelectorAll('.param-input');
-    let allFilled = true;
+    const inputs = document.querySelectorAll('.param-input'); let allFilled = true;
 
     inputs.forEach(input => {
         const code = input.getAttribute('data-code'), val = input.value;
         if (val === '') allFilled = false;
-        else {
-            const regex = new RegExp(`{${code}}`, 'g');
-            fMin = fMin.replace(regex, val); fMax = fMax.replace(regex, val);
-        }
+        else { const regex = new RegExp(`{${code}}`, 'g'); fMin = fMin.replace(regex, val); fMax = fMax.replace(regex, val); }
     });
 
     if (!allFilled && inputs.length > 0) { resetResult(); return; }
@@ -342,19 +290,15 @@ function executeCalculation() {
         else if (calculatedMin !== null) { resultEl.innerText = `${calculatedMin}`; calculatedMax = calculatedMin; }
         else resultEl.innerText = "--";
         
-        resultEl.classList.add('text-[#1B365D]');
-        checkPrescriptionSafety();
+        resultEl.classList.add('text-[#1B365D]'); checkPrescriptionSafety();
     } catch (error) { document.getElementById('result-value').innerText = "公式錯誤"; }
 }
 
 function checkPrescriptionSafety() {
-    const preInput = document.getElementById('prescribed-dose').value;
-    const msgBox = document.getElementById('dose-eval-msg');
-    
+    const preInput = document.getElementById('prescribed-dose').value; const msgBox = document.getElementById('dose-eval-msg');
     if (!preInput || calculatedMin === null) { msgBox.classList.add('hidden'); return; }
 
-    const val = parseFloat(preInput);
-    msgBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
+    const val = parseFloat(preInput); msgBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-yellow-100', 'text-yellow-800');
     
     if (calculatedMax !== null) {
         if (val < calculatedMin) {
@@ -376,35 +320,16 @@ function checkPrescriptionSafety() {
 }
 
 function resetResult() {
-    document.getElementById('result-value').innerText = '--';
-    document.getElementById('result-value').className = 'text-3xl font-extrabold text-[#1B365D]';
-    calculatedMin = null; calculatedMax = null;
-    document.getElementById('dose-eval-msg').classList.add('hidden');
+    document.getElementById('result-value').innerText = '--'; document.getElementById('result-value').className = 'text-3xl font-extrabold text-[#1B365D]';
+    calculatedMin = null; calculatedMax = null; document.getElementById('dose-eval-msg').classList.add('hidden');
 }
 
-window.openFeedbackModal = function(contextInfo) {
-    document.getElementById('feedback-context').innerText = contextInfo;
-    document.getElementById('feedback-content').value = '';
-    document.getElementById('feedback-modal').classList.remove('hidden');
-};
-
+window.openFeedbackModal = function(contextInfo) { document.getElementById('feedback-context').innerText = contextInfo; document.getElementById('feedback-content').value = ''; document.getElementById('feedback-modal').classList.remove('hidden'); };
 window.submitFeedback = async function() {
-    const content = document.getElementById('feedback-content').value.trim();
-    const contextInfo = document.getElementById('feedback-context').innerText;
+    const content = document.getElementById('feedback-content').value.trim(); const contextInfo = document.getElementById('feedback-context').innerText;
     if(!content) return alert("請輸入回報內容");
-    
-    const btn = document.getElementById('btn-submit-feedback');
-    btn.innerText = '傳送中...'; btn.disabled = true;
-    
-    try {
-        await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'saveFeedback', mode: 'add', drug_info: contextInfo, content: content }) });
-        alert("回報成功！感謝您的協助。");
-        document.getElementById('feedback-modal').classList.add('hidden');
-    } catch(e) { alert("連線失敗"); }
-    btn.innerText = '送出回報'; btn.disabled = false;
+    const btn = document.getElementById('btn-submit-feedback'); btn.innerText = '傳送中...'; btn.disabled = true;
+    try { await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'saveFeedback', mode: 'add', drug_info: contextInfo, content: content }) }); alert("回報成功！感謝您的協助。"); document.getElementById('feedback-modal').classList.add('hidden');
+    } catch(e) { alert("連線失敗"); } btn.innerText = '送出回報'; btn.disabled = false;
 };
-
-window.goToAdminEdit = function() {
-    if(!currentDrug) return;
-    window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`;
-};
+window.goToAdminEdit = function() { if(!currentDrug) return; window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
