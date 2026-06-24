@@ -80,6 +80,7 @@ async function initializeCalculator() {
             
             renderHomeContent(); setupFilters(); applyFilters();
 
+            // 【優化核心】還原自後台跳轉回來時的狀態記憶
             const savedStateStr = localStorage.getItem('pharma_front_state');
             if(savedStateStr) {
                 try {
@@ -90,7 +91,9 @@ async function initializeCalculator() {
                     }
                     if(savedState.drugId) {
                         const d = STORE.drugs.find(x => x.drug_id === savedState.drugId);
-                        if(d) selectDrug(d);
+                        if(d) {
+                            setTimeout(() => selectDrug(d), 200); // 確保畫面渲染後自動打開該藥品
+                        }
                     }
                 } catch(e) {}
                 localStorage.removeItem('pharma_front_state');
@@ -281,31 +284,28 @@ function renderDynamicParameters(formula) {
     if (!formula) return;
     document.getElementById('prescribed-dose').value = ''; document.getElementById('dose-eval-msg').classList.add('hidden'); resetResult();
 
+    // 【修改核心】強制轉型 String，確保多行文字能正確比對與顯示在醒目的卡片中
     const remarkCard = document.getElementById('formula-remark-card');
-    if (formula.remark && String(formula.remark).trim() !== '') {
-        document.getElementById('formula-remark').innerText = String(formula.remark);
+    const safeRemark = String(formula.remark || '').trim();
+    if (safeRemark !== '') {
+        document.getElementById('formula-remark').innerText = safeRemark;
         remarkCard.classList.remove('hidden');
     } else {
         remarkCard.classList.add('hidden');
         document.getElementById('formula-remark').innerText = '';
     }
 
-    // 取得計算法結果計算區塊的卡片元件
     const resultCard = document.getElementById('result-value').closest('.bg-blue-50\\/50') || document.getElementById('result-value').parentElement.parentElement;
-
-    // 【核心優化】判斷是否為「純文字/純指引型公式」
     const minStr = String(formula.formula_min || '').trim();
     const maxStr = String(formula.formula_max || '').trim();
     
     if (minStr === "" && maxStr === "") {
-        // 隱藏全部計算模組，只亮出琥珀色提示指引卡片
         if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.add('hidden');
         if(document.getElementById('absolute-max-alert')) document.getElementById('absolute-max-alert').classList.add('hidden');
         if(resultCard) resultCard.classList.add('hidden');
         resetResult();
         return; 
     } else {
-        // 如果有計算式，則恢復顯示
         if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.remove('hidden');
         if(resultCard) resultCard.classList.remove('hidden');
     }
@@ -407,11 +407,24 @@ window.submitFeedback = async function() {
     } catch(e) { alert("連線失敗"); } btn.innerText = '送出回報'; btn.disabled = false;
 };
 
+// 【優化核心】儲存狀態並確保跳轉正確
 window.saveCurrentState = function() {
     if (!currentDrug) return;
-    const state = { domain: currentDomain, drugId: currentDrug.drug_id };
+    const state = {
+        domain: currentDomain,
+        drugId: currentDrug.drug_id
+    };
     localStorage.setItem('pharma_front_state', JSON.stringify(state));
 };
 
-window.goToAdminEdit = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
-window.goToAdminFormula = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`; };
+window.goToAdminEdit = function() { 
+    if(!currentDrug) return; 
+    saveCurrentState();
+    window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; 
+};
+
+window.goToAdminFormula = function() {
+    if(!currentDrug) return;
+    saveCurrentState();
+    window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`;
+};
