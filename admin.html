@@ -91,7 +91,7 @@
                 </div>
                 <div class="max-h-[400px] overflow-y-auto">
                     <table class="w-full data-table text-sm relative">
-                        <thead class="sticky top-0 z-10 shadow-sm"><tr><th>所屬系統</th><th>代碼 / 分類</th><th>一般名稱(學名) / 商品名</th><th>狀態切換</th><th>操作</th></tr></thead>
+                        <thead class="sticky top-0 z-10 shadow-sm"><tr><th>所屬系統</th><th>代碼 / 分類 / 劑型</th><th>一般名稱(學名) / 商品名</th><th>狀態切換</th><th>操作</th></tr></thead>
                         <tbody id="list-dash-drugs"></tbody>
                     </table>
                 </div>
@@ -216,7 +216,6 @@
                 <div class="grid grid-cols-3 gap-4 mb-4">
                     <div><label class="block text-xs font-bold mb-1">計算方法名稱 *</label><input type="text" id="admin-formula-name" placeholder="如：小兒(2-5歲) 或 體重計算" class="w-full border rounded p-2 text-sm focus:border-blue-500"></div>
                     <div><label class="block text-xs font-bold mb-1">結果單位 *</label><input type="text" id="admin-result-unit" placeholder="如：mg/day" class="w-full border rounded p-2 text-sm focus:border-blue-500"></div>
-                    
                     <div class="col-span-3">
                         <label class="block text-xs font-bold mb-1 text-purple-800"><i class="fa-solid fa-comment-medical"></i> 備註提醒 (支援多行輸入，將醒目呈現於前台說明卡片) *</label>
                         <textarea id="admin-remark" rows="3" class="w-full border border-purple-200 rounded p-2 text-sm focus:border-purple-500 bg-white" placeholder="請輸入此計算方法的臨床備註或特殊說明..."></textarea>
@@ -320,19 +319,17 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4">分類基本檔維護 (供藥品下拉選擇)</h2>
             <div class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-3xl">
                 <input type="hidden" id="cat-mode" value="add"><input type="hidden" id="cat-id">
-                <div class="grid grid-cols-3 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第一層分類 *</label><input type="text" id="cat-level1" class="w-full border rounded p-2 text-sm" placeholder="如: 抗生素"></div>
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第二層分類</label><input type="text" id="cat-level2" class="w-full border rounded p-2 text-sm" placeholder="如: 青黴素"></div>
-                    <div><label class="block text-xs font-bold mb-1 text-blue-600">第三層分類</label><input type="text" id="cat-level3" class="w-full border rounded p-2 text-sm" placeholder="如: 口服製劑"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div><label class="block text-xs font-bold mb-1 text-blue-600">分類名稱 *</label><input type="text" id="cat-level1" class="w-full border rounded p-2 text-sm" placeholder="如: 抗生素"></div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="btn-save-cat" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增分類組合</button>
+                    <button id="btn-save-cat" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增分類</button>
                     <button id="btn-cancel-cat" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
                 </div>
             </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
                 <div class="p-3 bg-gray-50 border-b flex items-center justify-between"><span class="font-bold text-sm text-gray-700">分類清單</span><input type="text" id="filter-cats" placeholder="搜尋分類..." class="border rounded p-1.5 text-sm w-64"></div>
-                <table class="w-full data-table text-sm"><thead><tr><th>第一層</th><th>第二層</th><th>第三層</th><th>操作</th></tr></thead><tbody id="list-categories"></tbody></table>
+                <table class="w-full data-table text-sm"><thead><tr><th>分類名稱</th><th>操作</th></tr></thead><tbody id="list-categories"></tbody></table>
             </div>
         </section>
 
