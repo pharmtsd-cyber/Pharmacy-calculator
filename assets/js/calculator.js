@@ -171,26 +171,29 @@ function applyFilters() {
 }
 
 function renderDrugList(drugsToRender) {
-    const treeContainer = document.getElementById('category-tree'); treeContainer.innerHTML = '';
+    const treeContainer = document.getElementById('category-tree');
+    treeContainer.innerHTML = '';
     if (drugsToRender.length === 0) return treeContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">無符合的篩選結果</p>';
 
-    const ul = document.createElement('ul'); ul.className = 'flex flex-col gap-3 p-1';
+    const ul = document.createElement('ul');
+    ul.className = 'flex flex-col gap-2 p-1';
+
     drugsToRender.forEach(drug => {
         const li = document.createElement('li');
-        li.className = 'p-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 rounded cursor-pointer transition shadow-sm';
+        // 【優化】加入選中狀態的 CSS 判斷：若藥品與 currentDrug 一致，則給予高亮外框與藍色背景
+        const isSelected = currentDrug && drug.drug_id === currentDrug.drug_id;
+        li.className = `p-3 rounded cursor-pointer transition shadow-sm border-2 ${isSelected ? 'bg-blue-100 border-[#1B365D] ring-2 ring-blue-200' : 'bg-gray-50 hover:bg-blue-50 border-gray-200'}`;
+        li.id = `drug-item-${drug.drug_id}`; // 給每個項目 ID 方便定位
+        
         li.innerHTML = `
             <div class="flex gap-1 mb-2">
                 ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}
-                ${drug.cat_2 ? `<span class="bg-blue-50 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_2}</span>` : ''}
-                ${drug.cat_3 ? `<span class="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_3}</span>` : ''}
             </div>
             <div class="font-bold text-[#1B365D] text-sm break-words leading-tight mb-2">${drug.generic_name || '無學名'}</div>
-            <div class="text-[11px] text-gray-600 flex flex-col gap-1 bg-white p-2 rounded border border-gray-100">
-                <div class="flex"><span class="w-16 font-bold text-gray-400">現有商品</span><span class="font-medium text-gray-800 truncate" title="${drug.brand_name || '--'}">${drug.brand_name || '--'}</span></div>
-                <div class="flex"><span class="w-16 font-bold text-gray-400">中文商品</span><span class="font-medium text-gray-800 truncate" title="${drug.local_name || '--'}">${drug.local_name || '--'}</span></div>
-                <div class="flex"><span class="w-16 font-bold text-gray-400">原廠商品</span><span class="font-medium text-gray-800 truncate" title="${drug.common_brand || '--'}">${drug.common_brand || '--'}</span></div>
-            </div>`;
-        li.onclick = () => selectDrug(drug); ul.appendChild(li);
+            <div class="text-[11px] text-gray-600 truncate">${drug.local_name || '--'}</div>
+        `;
+        li.onclick = () => selectDrug(drug);
+        ul.appendChild(li);
     });
     treeContainer.appendChild(ul);
 }
