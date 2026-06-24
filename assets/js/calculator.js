@@ -4,7 +4,6 @@ let calculatedMin = null;
 let calculatedMax = null;
 let currentDomain = 'home'; 
 
-// 防抖引擎 (Debounce)：延遲執行，避免狂打字時畫面卡頓
 window.debounce = function(func, delay) {
     let timer;
     return function(...args) {
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('version-badge').innerText = CONFIG.VERSION || "v1.0.0";
     document.getElementById('prescribed-dose').addEventListener('input', window.debounce(checkPrescriptionSafety, 300));
     
-    // 左側選單切換邏輯
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.front-nav').forEach(n => {
@@ -82,7 +80,6 @@ async function initializeCalculator() {
             
             renderHomeContent(); setupFilters(); applyFilters();
 
-            // 還原自後台跳轉回來時的狀態記憶
             const savedStateStr = localStorage.getItem('pharma_front_state');
             if(savedStateStr) {
                 try {
@@ -272,7 +269,6 @@ function selectDrug(drug) {
         const option = document.createElement('option'); option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
     });
 
-    // 【核心修正】轉型為字串進行精準比對，徹底排除數字與字串型態不合造成選取失效的問題
     selectEl.onchange = (e) => { 
         currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
         renderDynamicParameters(currentFormula); 
@@ -285,7 +281,6 @@ function renderDynamicParameters(formula) {
     if (!formula) return;
     document.getElementById('prescribed-dose').value = ''; document.getElementById('dose-eval-msg').classList.add('hidden'); resetResult();
 
-    // 【核心修正】強制使用 String 轉型讀取多行備註，避免 null 或數值型態導致卡片不顯示
     const remarkCard = document.getElementById('formula-remark-card');
     if (formula.remark && String(formula.remark).trim() !== '') {
         document.getElementById('formula-remark').innerText = String(formula.remark);
@@ -293,6 +288,26 @@ function renderDynamicParameters(formula) {
     } else {
         remarkCard.classList.add('hidden');
         document.getElementById('formula-remark').innerText = '';
+    }
+
+    // 取得計算法結果計算區塊的卡片元件
+    const resultCard = document.getElementById('result-value').closest('.bg-blue-50\\/50') || document.getElementById('result-value').parentElement.parentElement;
+
+    // 【核心優化】判斷是否為「純文字/純指引型公式」
+    const minStr = String(formula.formula_min || '').trim();
+    const maxStr = String(formula.formula_max || '').trim();
+    
+    if (minStr === "" && maxStr === "") {
+        // 隱藏全部計算模組，只亮出琥珀色提示指引卡片
+        if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.add('hidden');
+        if(document.getElementById('absolute-max-alert')) document.getElementById('absolute-max-alert').classList.add('hidden');
+        if(resultCard) resultCard.classList.add('hidden');
+        resetResult();
+        return; 
+    } else {
+        // 如果有計算式，則恢復顯示
+        if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.remove('hidden');
+        if(resultCard) resultCard.classList.remove('hidden');
     }
 
     document.getElementById('result-unit').innerText = formula.result_unit || ''; document.querySelector('.prescribed-unit-display').innerText = formula.result_unit || '';
@@ -305,7 +320,7 @@ function renderDynamicParameters(formula) {
     if (hasAlert) alertBox.classList.remove('hidden'); else alertBox.classList.add('hidden');
 
     const paramContainer = document.getElementById('dynamic-parameters'); paramContainer.innerHTML = '';
-    const combinedFormula = (formula.formula_min || '') + " " + (formula.formula_max || '');
+    const combinedFormula = minStr + " " + maxStr;
     const paramRegex = /{([^}]+)}/g; const requiredCodes = new Set(); let match;
     while ((match = paramRegex.exec(combinedFormula)) !== null) requiredCodes.add(match[1]);
 
