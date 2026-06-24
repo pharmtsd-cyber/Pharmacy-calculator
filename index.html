@@ -81,10 +81,14 @@
                 </div>
                 <div class="p-4 flex flex-col gap-3 flex-grow overflow-hidden">
                     <div class="flex flex-col gap-2 bg-blue-50 p-3 rounded border border-blue-100">
-                        <label class="text-xs font-bold text-blue-800 flex items-center gap-1"><i class="fa-solid fa-layer-group"></i> 分類層級篩選</label>
-                        <select id="filter-cat1" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white"><option value="">-- 所有第一層分類 --</option></select>
-                        <select id="filter-cat2" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] disabled:bg-gray-100 bg-white" disabled><option value="">-- 所有第二層分類 --</option></select>
-                        <select id="filter-cat3" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] disabled:bg-gray-100 bg-white" disabled><option value="">-- 所有第三層分類 --</option></select>
+                        <label class="text-xs font-bold text-blue-800 flex items-center gap-1"><i class="fa-solid fa-filter"></i> 進階藥品篩選</label>
+                        <select id="filter-cat1" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white"><option value="">-- 所有分類 --</option></select>
+                        <select id="filter-form" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white"><option value="">-- 所有劑型 --</option></select>
+                        <select id="filter-status" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white">
+                            <option value="Y" selected>僅顯示上線藥品</option>
+                            <option value="N">僅顯示未上線藥品</option>
+                            <option value="ALL">顯示全部狀態</option>
+                        </select>
                     </div>
                     <div class="relative">
                         <input type="text" id="search-input" placeholder="模糊搜尋 (學名/各類商品名)..." class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-[#1B365D] text-sm">
