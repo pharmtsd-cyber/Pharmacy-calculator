@@ -38,10 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 document.getElementById('search-input').value = '';
                 document.getElementById('filter-cat1').value = '';
-                document.getElementById('filter-cat2').innerHTML = '<option value="">-- 所有第二層分類 --</option>';
-                document.getElementById('filter-cat2').disabled = true;
-                document.getElementById('filter-cat3').innerHTML = '<option value="">-- 所有第三層分類 --</option>';
-                document.getElementById('filter-cat3').disabled = true;
+                document.getElementById('filter-form').value = '';
+                document.getElementById('filter-status').value = 'Y';
                 
                 document.getElementById('calc-placeholder').classList.remove('hidden');
                 document.getElementById('calc-panel').classList.add('hidden');
@@ -56,13 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
 window.toggleAccordion = function(contentId, btnElement) {
     const content = document.getElementById(contentId);
     const icon = btnElement.querySelector('i.fa-chevron-down');
-    
     if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.classList.add('rotate-180');
+        content.classList.remove('hidden'); icon.classList.add('rotate-180');
     } else {
-        content.classList.add('hidden');
-        icon.classList.remove('rotate-180');
+        content.classList.add('hidden'); icon.classList.remove('rotate-180');
     }
 };
 
@@ -80,38 +75,25 @@ async function initializeCalculator() {
             
             renderHomeContent(); setupFilters(); applyFilters();
 
-            // 【優化核心】還原狀態並定位的邏輯，統一寫在這裡
             const savedStateStr = localStorage.getItem('pharma_front_state');
             if(savedStateStr) {
                 try {
                     const savedState = JSON.parse(savedStateStr);
-                    // 1. 還原科別 (Domain)
-                    if(savedState.domain && savedState.domain !== 'home') {
+                    if(savedState && savedState.domain && savedState.domain !== 'home') {
                         const tab = document.querySelector(`.front-nav[data-target="${savedState.domain}"]`);
                         if(tab) tab.click(); 
                     }
-                    // 2. 還原藥品並滾動定位
-                    if(savedState.drugId) {
-                        const d = STORE.drugs.find(x => x.drug_id === savedState.drugId);
-                        if(d) {
-                            setTimeout(() => {
-                                selectDrug(d); // 選中藥品
-                                const el = document.getElementById(`drug-item-${d.drug_id}`);
-                                if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 平滑滾動至中央
-                            }, 300); // 確保畫面渲染完成
-                        }
+                    if(savedState && savedState.drugId) {
+                        const d = STORE.drugs.find(x => String(x.drug_id) === String(savedState.drugId));
+                        if(d) setTimeout(() => selectDrug(d), 300);
                     }
-                } catch(e) { console.error("狀態還原錯誤", e); }
-                localStorage.removeItem('pharma_front_state'); // 清除快取
+                } catch(e) { console.error(e); }
+                localStorage.removeItem('pharma_front_state');
             }
-
         } else {
             loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; loadingStatus.classList.add('text-red-500');
         }
-    } catch (error) { 
-        console.error(error);
-        loadingStatus.innerText = "系統發生錯誤。"; 
-    }
+    } catch (error) { loadingStatus.innerText = "系統發生錯誤。"; }
 }
 
 function renderHomeContent() {
@@ -135,11 +117,9 @@ function setupFilters() {
     const statusSelect = document.getElementById('filter-status');
     const searchInput = document.getElementById('search-input');
     
-    // 載入單層分類
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     cat1s.forEach(c => cat1Select.add(new Option(c, c)));
 
-    // 載入目前藥品有使用到的劑型清單
     const forms = [...new Set(STORE.drugs.map(d => d.form).filter(Boolean))].sort();
     forms.forEach(f => formSelect.add(new Option(f, f)));
 
@@ -156,7 +136,6 @@ function applyFilters() {
     const k = document.getElementById('search-input').value.toLowerCase();
 
     const filtered = STORE.drugs.filter(d => {
-        // 狀態篩選判斷
         const drugStatus = d.status ? d.status.toUpperCase() : 'N';
         if (statusVal !== 'ALL' && drugStatus !== statusVal) return false;
         
@@ -180,22 +159,19 @@ function renderDrugList(drugsToRender) {
     treeContainer.innerHTML = '';
     if (drugsToRender.length === 0) return treeContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">無符合的篩選結果</p>';
 
-    const ul = document.createElement('ul');
-    ul.className = 'flex flex-col gap-2 p-1';
+    const ul = document.createElement('ul'); ul.className = 'flex flex-col gap-2 p-1';
 
     drugsToRender.forEach(drug => {
         const li = document.createElement('li');
-        
-        // 使用 String 轉型確保 ID 比對永遠精準
         const isSelected = currentDrug && String(drug.drug_id).trim() === String(currentDrug.drug_id).trim();
         
-        // 加上 !important 強制權重 ( Tailwind 寫法為 !bg-...)
         li.className = `p-3 rounded cursor-pointer transition shadow-sm border-2 ${isSelected ? '!bg-blue-200 !border-[#1B365D] !ring-2 !ring-blue-400' : 'bg-gray-50 hover:bg-blue-50 border-gray-200'}`;
         li.id = `drug-item-${drug.drug_id}`;
         
         li.innerHTML = `
-            <div class="flex gap-1 mb-2">
-                ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}
+            <div class="flex gap-1 mb-2 flex-wrap">
+                ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.cat_1}</span>` : ''}
+                ${drug.form ? `<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.form}</span>` : ''}
             </div>
             <div class="font-bold text-[#1B365D] text-sm break-words leading-tight mb-2">${drug.generic_name || '無學名'}</div>
             <div class="text-[11px] text-gray-600 truncate">${drug.local_name || '--'}</div>
@@ -209,34 +185,31 @@ function renderDrugList(drugsToRender) {
 function selectDrug(drug) {
     currentDrug = drug;
 
-    // 1. 強制選中樣式處理
     const allItems = document.querySelectorAll('#category-tree li');
     allItems.forEach(el => {
-        el.classList.remove('bg-blue-100', 'border-[#1B365D]', 'ring-2', 'ring-blue-200', 'shadow-md');
+        el.classList.remove('!bg-blue-200', '!border-[#1B365D]', '!ring-2', '!ring-blue-400');
         el.classList.add('bg-gray-50', 'border-gray-200');
     });
     
     const selectedEl = document.getElementById(`drug-item-${drug.drug_id}`);
     if (selectedEl) {
         selectedEl.classList.remove('bg-gray-50', 'border-gray-200');
-        selectedEl.classList.add('bg-blue-100', 'border-[#1B365D]', 'ring-2', 'ring-blue-200', 'shadow-md');
+        selectedEl.classList.add('!bg-blue-200', '!border-[#1B365D]', '!ring-2', '!ring-blue-400');
         selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // 2. 顯示右側計算機面板
     document.getElementById('calc-placeholder').classList.add('hidden');
     document.getElementById('calc-panel').classList.remove('hidden');
 
-    // 3. 藥品資訊欄位填入
     document.getElementById('drug-right-cats').innerHTML = `
-        ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}`;
+        ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.cat_1}</span>` : ''}
+        ${drug.form ? `<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.form}</span>` : ''}`;
     
     document.getElementById('drug-title').innerText = drug.generic_name || '無學名';
     document.getElementById('drug-sub1').innerText = drug.brand_name || '--';
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
-
-    // 補回：徽章與關聯藥品、劑型邏輯 (保留您原本的設計)
+    
     const badgeCode = document.getElementById('drug-badge-code'), badgeCrush = document.getElementById('drug-badge-crush');
     if(drug.drug_code) { badgeCode.innerText = drug.drug_code; badgeCode.classList.remove('hidden'); } else badgeCode.classList.add('hidden');
     if(drug.can_crush === 'Y') { badgeCrush.innerText = '可磨粉'; badgeCrush.className = 'text-[10px] font-bold px-2 py-0.5 rounded border border-green-300 bg-green-50 text-green-700'; badgeCrush.classList.remove('hidden'); }
@@ -257,39 +230,21 @@ function selectDrug(drug) {
     const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
     let formRow = document.getElementById('drug-form-row');
     if (!formRow) {
-        formRow = document.createElement('div'); 
-        formRow.id = 'drug-form-row'; 
-        formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; 
+        formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; 
         rightMetaContainer.appendChild(formRow); 
     }
     formRow.innerHTML = `<span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span>`;
 
-    // 補回：明確控制藥品專屬「說明卡片」的顯隱
     const instW = document.getElementById('drug-dose-inst-wrapper');
-    if (drug.dose_instruction && drug.dose_instruction.trim() !== '') {
-        document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction;
-        instW.classList.remove('hidden');
-    } else {
-        instW.classList.add('hidden');
-    }
-
+    if (drug.dose_instruction && drug.dose_instruction.trim() !== '') { document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction; instW.classList.remove('hidden'); } else instW.classList.add('hidden');
     const suppW = document.getElementById('drug-supplemental-wrapper');
-    if (drug.supplemental_info && drug.supplemental_info.trim() !== '') {
-        document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info;
-        suppW.classList.remove('hidden');
-    } else {
-        suppW.classList.add('hidden');
-    }
-
+    if (drug.supplemental_info && drug.supplemental_info.trim() !== '') { document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info; suppW.classList.remove('hidden'); } else suppW.classList.add('hidden');
     const refW = document.getElementById('drug-ref-wrapper');
-    if (drug.reference_url && drug.reference_url.trim() !== '') {
-        document.getElementById('drug-ref-content').innerText = drug.reference_url;
-        refW.classList.remove('hidden');
-    } else {
-        refW.classList.add('hidden');
-    }
+    if (drug.reference_url && drug.reference_url.trim() !== '') { document.getElementById('drug-ref-content').innerText = drug.reference_url; refW.classList.remove('hidden'); } else refW.classList.add('hidden');
 
-    // 4. 公式處理邏輯
+    document.querySelectorAll('#drug-dose-inst-content, #drug-supplemental-content, #drug-ref-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('#drug-dose-inst-wrapper button i, #drug-supplemental-wrapper button i, #drug-ref-wrapper button i').forEach(icon => icon.classList.remove('rotate-180'));
+
     const targetId = String(drug.drug_id || '').trim().toLowerCase();
     const targetCode = String(drug.drug_code || '').trim().toLowerCase();
     const drugFormulas = STORE.formulas.filter(f => {
@@ -297,43 +252,30 @@ function selectDrug(drug) {
         return fId !== '' && (fId === targetId || fId === targetCode);
     });
 
-    const selectEl = document.getElementById('formula-select');
-    selectEl.innerHTML = '';
-    
-    // 【關鍵修正】抓取同時包覆「建議區間」與「處方比對」的最外層淺藍色大容器
-    const calcResultContainer = document.getElementById('result-value').closest('.border-blue-100');
+    const selectEl = document.getElementById('formula-select'); selectEl.innerHTML = '';
+    const calcResultCard = document.getElementById('calc-result-card');
     
     if (drugFormulas.length === 0) { 
         selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>'; 
-        document.getElementById('dynamic-parameters').classList.add('hidden'); 
-        document.getElementById('formula-remark-card').classList.add('hidden'); 
+        document.getElementById('dynamic-parameters').classList.add('hidden');
+        document.getElementById('formula-remark-card').classList.add('hidden');
         document.getElementById('formula-remark').innerText = '';
         document.getElementById('absolute-max-alert').classList.add('hidden');
         document.getElementById('single-max-text').innerText = '';
         document.getElementById('daily-max-text').innerText = '';
-        
-        // 隱藏整個計算與比對容器
-        if (calcResultContainer) calcResultContainer.classList.add('hidden');
-        
-        resetResult(); 
-        return; 
+        if (calcResultCard) calcResultCard.classList.add('hidden');
+        resetResult(); return; 
     } else {
-        // 有公式才顯示相關區域
         document.getElementById('dynamic-parameters').classList.remove('hidden');
-        if (calcResultContainer) calcResultContainer.classList.remove('hidden');
+        if (calcResultCard) calcResultCard.classList.remove('hidden');
         
         drugFormulas.forEach(f => {
-            const option = document.createElement('option'); 
-            option.value = f.formula_id; 
-            option.innerText = f.formula_name; 
-            selectEl.appendChild(option);
+            const option = document.createElement('option'); option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
         });
-
         selectEl.onchange = (e) => { 
             currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
             renderDynamicParameters(currentFormula); 
         };
-
         currentFormula = drugFormulas[0]; 
         renderDynamicParameters(currentFormula);
     }
@@ -341,9 +283,8 @@ function selectDrug(drug) {
 
 function renderDynamicParameters(formula) {
     if (!formula) return;
-    document.getElementById('prescribed-dose').value = ''; document.getElementById('dose-eval-msg').classList.add('hidden'); resetResult();
+    resetResult();
 
-    // 【修改核心】強制轉型 String，確保多行文字能正確比對與顯示在醒目的卡片中
     const remarkCard = document.getElementById('formula-remark-card');
     const safeRemark = String(formula.remark || '').trim();
     if (safeRemark !== '') {
@@ -354,22 +295,22 @@ function renderDynamicParameters(formula) {
         document.getElementById('formula-remark').innerText = '';
     }
 
-    const resultCard = document.getElementById('result-value').closest('.bg-blue-50\\/50') || document.getElementById('result-value').parentElement.parentElement;
+    const calcResultCard = document.getElementById('calc-result-card');
     const minStr = String(formula.formula_min || '').trim();
     const maxStr = String(formula.formula_max || '').trim();
     
     if (minStr === "" && maxStr === "") {
         if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.add('hidden');
         if(document.getElementById('absolute-max-alert')) document.getElementById('absolute-max-alert').classList.add('hidden');
-        if(resultCard) resultCard.classList.add('hidden');
-        resetResult();
-        return; 
+        if(calcResultCard) calcResultCard.classList.add('hidden');
+        resetResult(); return; 
     } else {
         if(document.getElementById('dynamic-parameters')) document.getElementById('dynamic-parameters').classList.remove('hidden');
-        if(resultCard) resultCard.classList.remove('hidden');
+        if(calcResultCard) calcResultCard.classList.remove('hidden');
     }
 
-    document.getElementById('result-unit').innerText = formula.result_unit || ''; document.querySelector('.prescribed-unit-display').innerText = formula.result_unit || '';
+    document.getElementById('result-unit').innerText = formula.result_unit || ''; 
+    document.querySelectorAll('.prescribed-unit-display').forEach(el => el.innerText = formula.result_unit || '');
 
     const alertBox = document.getElementById('absolute-max-alert'); let hasAlert = false;
     if (formula.single_max) { document.getElementById('single-max-text').innerText = `單次最大：${formula.single_max} ${formula.single_max_unit||''}`; hasAlert = true;
@@ -391,8 +332,7 @@ function renderDynamicParameters(formula) {
         const div = document.createElement('div'); div.className = 'flex flex-col gap-1';
         div.innerHTML = `
             <label class="text-xs font-bold text-[#1B365D]">${paramName} (${paramUnit})</label>
-            <input type="number" data-code="${code}" step="any" min="0" placeholder="請輸入數值..." 
-                   class="param-input border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] shadow-inner bg-white">
+            <input type="number" data-code="${code}" step="any" min="0" placeholder="請輸入數值..." class="param-input border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] shadow-inner bg-white">
         `;
         paramContainer.appendChild(div);
     });
@@ -456,16 +396,13 @@ function resetResult() {
     document.getElementById('result-value').innerText = '--'; 
     document.getElementById('result-value').className = 'text-3xl font-extrabold text-[#1B365D]';
     
-    // 【新增】徹底清空單位標籤與輸入框，防止切換時殘留前一筆資料
     const resUnit = document.getElementById('result-unit');
     if(resUnit) resUnit.innerText = ''; 
-    const preUnit = document.querySelector('.prescribed-unit-display');
-    if(preUnit) preUnit.innerText = ''; 
+    document.querySelectorAll('.prescribed-unit-display').forEach(el => el.innerText = '');
     const preDose = document.getElementById('prescribed-dose');
     if(preDose) preDose.value = '';
     
-    calculatedMin = null; 
-    calculatedMax = null; 
+    calculatedMin = null; calculatedMax = null; 
     document.getElementById('dose-eval-msg').classList.add('hidden');
 }
 
@@ -478,24 +415,10 @@ window.submitFeedback = async function() {
     } catch(e) { alert("連線失敗"); } btn.innerText = '送出回報'; btn.disabled = false;
 };
 
-// 【優化核心】儲存狀態並確保跳轉正確
 window.saveCurrentState = function() {
     if (!currentDrug) return;
-    const state = {
-        domain: currentDomain,
-        drugId: currentDrug.drug_id
-    };
-    localStorage.setItem('pharma_front_state', JSON.stringify(state));
+    localStorage.setItem('pharma_front_state', JSON.stringify({ domain: currentDomain, drugId: currentDrug.drug_id }));
 };
 
-window.goToAdminEdit = function() { 
-    if(!currentDrug) return; 
-    saveCurrentState();
-    window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; 
-};
-
-window.goToAdminFormula = function() {
-    if(!currentDrug) return;
-    saveCurrentState();
-    window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`;
-};
+window.goToAdminEdit = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
+window.goToAdminFormula = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`; };
