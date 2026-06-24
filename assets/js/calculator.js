@@ -229,9 +229,7 @@ function selectDrug(drug) {
 
     // 3. 藥品資訊欄位填入
     document.getElementById('drug-right-cats').innerHTML = `
-        ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}
-        ${drug.cat_2 ? `<span class="bg-blue-50 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_2}</span>` : ''}
-        ${drug.cat_3 ? `<span class="bg-gray-200 text-gray-700 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_3}</span>` : ''}`;
+        ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}`;
     
     document.getElementById('drug-title').innerText = drug.generic_name || '無學名';
     document.getElementById('drug-sub1').innerText = drug.brand_name || '--';
