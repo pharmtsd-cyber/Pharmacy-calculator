@@ -51,7 +51,6 @@ window.renderDrugsList = function() {
         if (fc1 && d.cat_1 !== fc1) return false;
         if (ffm && d.form !== ffm) return false;
         if (fst && (d.status || 'N') !== fst) return false;
-        
         if (dashKeywords.length > 0) {
             const searchStr = `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''} ${d.cat_1||''}`.toLowerCase();
             if (!dashKeywords.every(kw => searchStr.includes(kw))) return false;
@@ -72,7 +71,13 @@ window.renderDrugsList = function() {
 
         return `<tr class="hover:bg-blue-50 transition">
             <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
-            <td class="pt-3"><div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div><span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1||''}</span></td>
+            <td class="pt-3">
+                <div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div>
+                <div class="flex gap-1 flex-wrap">
+                    ${d.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1 rounded">${d.cat_1}</span>` : ''}
+                    ${d.form ? `<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] px-1 rounded">${d.form}</span>` : ''}
+                </div>
+            </td>
             <td class="pt-3"><div class="font-bold text-blue-900">${d.generic_name||'無學名'}</div><div class="text-[10px] text-gray-500">${d.local_name||''} ${d.brand_name?'('+d.brand_name+')':''}</div></td>
             <td class="pt-3">${statusHtml}</td>
             <td class="pt-3 flex gap-2 flex-wrap">
@@ -140,7 +145,7 @@ window.toggleDrugStatus = async function(drugId, currentStatus, event) {
 
     const payload = { 
         action: 'saveDrug', mode: 'edit', drug_id: d.drug_id, status: newStatus,
-        domain: d.domain, cat_1: d.cat_1, cat_2: d.cat_2, cat_3: d.cat_3,
+        domain: d.domain, cat_1: d.cat_1, cat_2: '', cat_3: '',
         local_name: d.local_name, brand_name: d.brand_name, common_brand: d.common_brand,
         generic_name: d.generic_name, ingredients: d.ingredients, dose_instruction: d.dose_instruction,
         supplemental_info: d.supplemental_info, reference_url: d.reference_url,
@@ -166,24 +171,11 @@ window.goToDrugView = function(drugId) {
 };
 
 window.setupDrugCategorySelects = function() {
-    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
+    const c1 = document.getElementById('drug-cat1');
     if(!c1) return;
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
-    c1.innerHTML = '<option value="">-- 可空白 --</option>'; cat1s.forEach(c => c1.add(new Option(c, c)));
-    c1.onchange = () => {
-        c2.innerHTML = '<option value="">--請選擇--</option>'; c3.innerHTML = '<option value="">--請選擇--</option>';
-        if (c1.value) {
-            const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value).map(c => c.cat_2).filter(Boolean))];
-            cat2s.forEach(c => c2.add(new Option(c, c))); c2.disabled = false;
-        } else c2.disabled = true; c3.disabled = true;
-    };
-    c2.onchange = () => {
-        c3.innerHTML = '<option value="">--請選擇--</option>';
-        if (c2.value) {
-            const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value && c.cat_2 === c2.value).map(c => c.cat_3).filter(Boolean))];
-            cat3s.forEach(c => c3.add(new Option(c, c))); c3.disabled = false;
-        } else c3.disabled = true;
-    };
+    c1.innerHTML = '<option value="">-- 可空白 --</option>'; 
+    cat1s.forEach(c => c1.add(new Option(c, c)));
 };
 
 window.viewDrug = function(drugId) {
@@ -197,10 +189,8 @@ window.viewDrug = function(drugId) {
     document.getElementById('drug-id').value = d.drug_id;
     document.getElementById('drug-domain').value = d.domain || 'PED';
 
-    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
-    c1.value = d.cat_1 || ''; c1.dispatchEvent(new Event('change')); 
-    c2.value = d.cat_2 || ''; c2.dispatchEvent(new Event('change')); 
-    c3.value = d.cat_3 || '';
+    const c1 = document.getElementById('drug-cat1');
+    if (c1) c1.value = d.cat_1 || '';
     
     document.getElementById('drug-local').value = d.local_name || '';
     document.getElementById('drug-brand').value = d.brand_name || '';
@@ -233,9 +223,8 @@ window.viewDrug = function(drugId) {
     scrollToTop();
 };
 
-// 【優化核心】公式專屬排序維護（支援 HTML5 拖拉自動同步）
 window.renderCurrentDrugFormulas = function(drugId, drugCode) {
-    const localFormulas = STORE.formulas.filter(f => f.drug_id === drugId || (drugCode && f.drug_id === drugCode));
+    const localFormulas = STORE.formulas.filter(f => String(f.drug_id).trim().toLowerCase() === String(drugId).trim().toLowerCase() || (drugCode && String(f.drug_id).trim().toLowerCase() === String(drugCode).trim().toLowerCase()));
     const container = document.getElementById('list-current-drug-formulas');
     if(!container) return;
     
@@ -253,7 +242,6 @@ window.renderCurrentDrugFormulas = function(drugId, drugCode) {
             <td onclick="event.stopPropagation()"><button onclick="deleteRecord('deleteFormula', '${f.formula_id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button></td>
         </tr>`).join('');
 
-    // 綁定原生拖拉排序事件監聽器
     let dragSourceEl = null;
     const rows = container.querySelectorAll('.drag-row');
     
@@ -263,41 +251,24 @@ window.renderCurrentDrugFormulas = function(drugId, drugCode) {
             e.dataTransfer.effectAllowed = 'move';
             row.classList.add('bg-purple-100', 'opacity-50');
         });
-
-        row.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        row.addEventListener('dragenter', (e) => {
-            row.classList.add('border-t-2', 'border-purple-500');
-        });
-
-        row.addEventListener('dragleave', (e) => {
-            row.classList.remove('border-t-2', 'border-purple-500');
-        });
-
+        row.addEventListener('dragover', (e) => { e.preventDefault(); return false; });
+        row.addEventListener('dragenter', (e) => { row.classList.add('border-t-2', 'border-purple-500'); });
+        row.addEventListener('dragleave', (e) => { row.classList.remove('border-t-2', 'border-purple-500'); });
         row.addEventListener('drop', async (e) => {
             e.stopPropagation();
             row.classList.remove('border-t-2', 'border-purple-500');
             
             if (dragSourceEl !== row) {
-                // 交換 DOM 節點位置
                 if (row.nextSibling === dragSourceEl) {
                     container.insertBefore(dragSourceEl, row);
                 } else {
                     container.insertBefore(dragSourceEl, row.nextSibling);
                 }
-                
-                // 收集排序完畢後的全新 ID 陣列
                 const orderedIds = [];
-                container.querySelectorAll('.drag-row').forEach(r => {
-                    orderedIds.push(r.getAttribute('data-fid'));
-                });
+                container.querySelectorAll('.drag-row').forEach(r => orderedIds.push(r.getAttribute('data-fid')));
 
-                // 自動安靜地非同步儲存至 Google 試算表，不再跳彈窗打斷藥師
-                const originalText = container.previousElementSibling ? container.parentElement.parentElement.querySelector('span').innerHTML : '';
                 const spanTitle = container.parentElement.parentElement.querySelector('span');
+                const originalText = spanTitle ? spanTitle.innerHTML : '';
                 if(spanTitle) spanTitle.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-purple-600 mr-1"></i> 正在儲存全新公式排序...`;
                 
                 await sendPost({ action: 'reorderFormulas', ordered_ids: orderedIds });
@@ -307,7 +278,6 @@ window.renderCurrentDrugFormulas = function(drugId, drugCode) {
             }
             return false;
         });
-
         row.addEventListener('dragend', () => {
             row.classList.remove('bg-purple-100', 'opacity-50');
             rows.forEach(r => r.classList.remove('border-t-2', 'border-purple-500'));
@@ -332,9 +302,7 @@ window.resetDrugForm = function() {
     document.getElementById('drug-id').value = '';
     document.getElementById('drug-domain').value = 'PED';
     
-    const c1 = document.getElementById('drug-cat1'), c2 = document.getElementById('drug-cat2'), c3 = document.getElementById('drug-cat3');
-    c1.value = ''; c2.value = ''; c3.value = '';
-    c2.disabled = true; c3.disabled = true;
+    if(document.getElementById('drug-cat1')) document.getElementById('drug-cat1').value = '';
 
     document.getElementById('drug-local').value = '';
     document.getElementById('drug-brand').value = '';
@@ -367,7 +335,7 @@ window.resetDrugForm = function() {
 window.saveDrug = async function() {
     const payload = { 
         action: 'saveDrug', mode: document.getElementById('drug-mode').value, drug_id: document.getElementById('drug-id').value, status: document.getElementById('drug-status').value,
-        domain: document.getElementById('drug-domain').value, cat_1: document.getElementById('drug-cat1').value, cat_2: document.getElementById('drug-cat2').value, cat_3: document.getElementById('drug-cat3').value,
+        domain: document.getElementById('drug-domain').value, cat_1: document.getElementById('drug-cat1').value, cat_2: '', cat_3: '',
         local_name: document.getElementById('drug-local').value.trim(), brand_name: document.getElementById('drug-brand').value.trim(), common_brand: document.getElementById('drug-common-brand').value.trim(),
         generic_name: document.getElementById('drug-generic').value.trim(), ingredients: document.getElementById('drug-ingred').value.trim(), dose_instruction: document.getElementById('drug-dose-inst').value.trim(),
         supplemental_info: document.getElementById('drug-supplemental').value.trim(), reference_url: document.getElementById('drug-url').value.trim(),
