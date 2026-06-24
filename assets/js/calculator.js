@@ -80,41 +80,37 @@ async function initializeCalculator() {
             
             renderHomeContent(); setupFilters(); applyFilters();
 
-            // 【優化核心】還原自後台跳轉回來時的狀態記憶
+            // 【優化核心】還原狀態並定位的邏輯，統一寫在這裡
             const savedStateStr = localStorage.getItem('pharma_front_state');
             if(savedStateStr) {
                 try {
                     const savedState = JSON.parse(savedStateStr);
+                    // 1. 還原科別 (Domain)
                     if(savedState.domain && savedState.domain !== 'home') {
                         const tab = document.querySelector(`.front-nav[data-target="${savedState.domain}"]`);
                         if(tab) tab.click(); 
                     }
+                    // 2. 還原藥品並滾動定位
                     if(savedState.drugId) {
                         const d = STORE.drugs.find(x => x.drug_id === savedState.drugId);
                         if(d) {
-                            setTimeout(() => selectDrug(d), 200); // 確保畫面渲染後自動打開該藥品
+                            setTimeout(() => {
+                                selectDrug(d); // 選中藥品
+                                const el = document.getElementById(`drug-item-${d.drug_id}`);
+                                if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 平滑滾動至中央
+                            }, 300); // 確保畫面渲染完成
                         }
                     }
-                } catch(e) {}
-                localStorage.removeItem('pharma_front_state');
+                } catch(e) { console.error("狀態還原錯誤", e); }
+                localStorage.removeItem('pharma_front_state'); // 清除快取
             }
 
         } else {
             loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; loadingStatus.classList.add('text-red-500');
         }
-    } catch (error) { loadingStatus.innerText = "系統發生錯誤。"; }
-
-    // 在 initializeCalculator() 的最後面：
-    if(savedState.drugId) {
-        const d = STORE.drugs.find(x => x.drug_id === savedState.drugId);
-        if(d) {
-            // 給渲染一點時間，再滾動
-            setTimeout(() => {
-                selectDrug(d);
-                const el = document.getElementById(`drug-item-${d.drug_id}`);
-                if(el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
-            }, 300);
-        }
+    } catch (error) { 
+        console.error(error);
+        loadingStatus.innerText = "系統發生錯誤。"; 
     }
 }
 
