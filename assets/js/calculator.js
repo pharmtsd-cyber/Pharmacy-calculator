@@ -130,45 +130,41 @@ function renderHomeContent() {
 }
 
 function setupFilters() {
-    const cat1Select = document.getElementById('filter-cat1'), cat2Select = document.getElementById('filter-cat2'), cat3Select = document.getElementById('filter-cat3');
+    const cat1Select = document.getElementById('filter-cat1');
+    const formSelect = document.getElementById('filter-form');
+    const statusSelect = document.getElementById('filter-status');
     const searchInput = document.getElementById('search-input');
+    
+    // 載入單層分類
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     cat1s.forEach(c => cat1Select.add(new Option(c, c)));
 
-    cat1Select.addEventListener('change', () => {
-        const val1 = cat1Select.value;
-        cat2Select.innerHTML = '<option value="">-- 所有第二層分類 --</option>'; cat3Select.innerHTML = '<option value="">-- 所有第三層分類 --</option>';
-        if (val1) {
-            const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === val1).map(c => c.cat_2).filter(Boolean))];
-            cat2s.forEach(c => cat2Select.add(new Option(c, c))); cat2Select.disabled = false;
-        } else cat2Select.disabled = true;
-        cat3Select.disabled = true; applyFilters();
-    });
+    // 載入目前藥品有使用到的劑型清單
+    const forms = [...new Set(STORE.drugs.map(d => d.form).filter(Boolean))].sort();
+    forms.forEach(f => formSelect.add(new Option(f, f)));
 
-    cat2Select.addEventListener('change', () => {
-        const val1 = cat1Select.value, val2 = cat2Select.value;
-        cat3Select.innerHTML = '<option value="">-- 所有第三層分類 --</option>';
-        if (val2) {
-            const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === val1 && c.cat_2 === val2).map(c => c.cat_3).filter(Boolean))];
-            cat3s.forEach(c => cat3Select.add(new Option(c, c))); cat3Select.disabled = false;
-        } else cat3Select.disabled = true; applyFilters();
-    });
-
-    cat3Select.addEventListener('change', applyFilters); 
+    cat1Select.addEventListener('change', applyFilters);
+    formSelect.addEventListener('change', applyFilters);
+    statusSelect.addEventListener('change', applyFilters);
     searchInput.addEventListener('input', window.debounce(applyFilters, 300));
 }
 
 function applyFilters() {
-    const c1 = document.getElementById('filter-cat1').value, c2 = document.getElementById('filter-cat2').value, c3 = document.getElementById('filter-cat3').value;
+    const c1 = document.getElementById('filter-cat1').value;
+    const formVal = document.getElementById('filter-form').value;
+    const statusVal = document.getElementById('filter-status').value;
     const k = document.getElementById('search-input').value.toLowerCase();
 
     const filtered = STORE.drugs.filter(d => {
-        if (d.status && d.status.toUpperCase() !== 'Y') return false;
+        // 狀態篩選判斷
+        const drugStatus = d.status ? d.status.toUpperCase() : 'N';
+        if (statusVal !== 'ALL' && drugStatus !== statusVal) return false;
+        
         const drugDomain = d.domain || 'PED';
         if (currentDomain !== 'home' && drugDomain !== currentDomain) return false; 
         if (c1 && d.cat_1 !== c1) return false;
-        if (c2 && d.cat_2 !== c2) return false;
-        if (c3 && d.cat_3 !== c3) return false;
+        if (formVal && d.form !== formVal) return false;
+        
         if (k) {
             const searchStr = ((d.drug_code||'') + (d.local_name||'') + (d.generic_name||'') + (d.brand_name||'') + (d.common_brand||'')).toLowerCase();
             if (!searchStr.includes(k)) return false;
