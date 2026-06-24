@@ -189,10 +189,13 @@ function renderDrugList(drugsToRender) {
 
     drugsToRender.forEach(drug => {
         const li = document.createElement('li');
-        // 【優化】加入選中狀態的 CSS 判斷：若藥品與 currentDrug 一致，則給予高亮外框與藍色背景
-        const isSelected = currentDrug && drug.drug_id === currentDrug.drug_id;
-        li.className = `p-3 rounded cursor-pointer transition shadow-sm border-2 ${isSelected ? 'bg-blue-100 border-[#1B365D] ring-2 ring-blue-200' : 'bg-gray-50 hover:bg-blue-50 border-gray-200'}`;
-        li.id = `drug-item-${drug.drug_id}`; // 給每個項目 ID 方便定位
+        
+        // 使用 String 轉型確保 ID 比對永遠精準
+        const isSelected = currentDrug && String(drug.drug_id).trim() === String(currentDrug.drug_id).trim();
+        
+        // 加上 !important 強制權重 ( Tailwind 寫法為 !bg-...)
+        li.className = `p-3 rounded cursor-pointer transition shadow-sm border-2 ${isSelected ? '!bg-blue-200 !border-[#1B365D] !ring-2 !ring-blue-400' : 'bg-gray-50 hover:bg-blue-50 border-gray-200'}`;
+        li.id = `drug-item-${drug.drug_id}`;
         
         li.innerHTML = `
             <div class="flex gap-1 mb-2">
