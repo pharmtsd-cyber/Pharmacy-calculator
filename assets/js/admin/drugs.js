@@ -11,32 +11,25 @@ window.debounce = function(func, delay) {
 };
 
 window.setupDrugListFilters = function() {
-    const dc1 = document.getElementById('list-dash-cat1'), dc2 = document.getElementById('list-dash-cat2'), dc3 = document.getElementById('list-dash-cat3');
-    const dd = document.getElementById('list-dash-domain'), df = document.getElementById('filter-dash-drugs');
-    const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
+    const dc1 = document.getElementById('list-dash-cat1');
+    const dfm = document.getElementById('list-dash-form');
+    const dst = document.getElementById('list-dash-status');
+    const dd = document.getElementById('list-dash-domain');
+    const df = document.getElementById('filter-dash-drugs');
 
-    const bindCascading = (c1, c2, c3) => {
-        if(!c1) return;
-        c1.innerHTML = '<option value="">-- 第一層分類篩選 --</option>'; cat1s.forEach(c => c1.add(new Option(c, c)));
-        c1.addEventListener('change', () => {
-            c2.innerHTML = '<option value="">-- 第二層分類篩選 --</option>'; c3.innerHTML = '<option value="">-- 第三層分類篩選 --</option>';
-            if (c1.value) {
-                const cat2s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value).map(c => c.cat_2).filter(Boolean))];
-                cat2s.forEach(c => c2.add(new Option(c, c))); c2.disabled = false;
-            } else c2.disabled = true;
-            c3.disabled = true; renderDrugsList();
-        });
-        c2.addEventListener('change', () => {
-            c3.innerHTML = '<option value="">-- 第三層分類篩選 --</option>';
-            if (c2.value) {
-                const cat3s = [...new Set(STORE.categories.filter(c => c.cat_1 === c1.value && c.cat_2 === c2.value).map(c => c.cat_3).filter(Boolean))];
-                cat3s.forEach(c => c3.add(new Option(c, c))); c3.disabled = false;
-            } else c3.disabled = true; renderDrugsList();
-        });
-        c3.addEventListener('change', renderDrugsList);
-    };
-
-    bindCascading(dc1, dc2, dc3);
+    if(dc1) {
+        const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
+        dc1.innerHTML = '<option value="">-- 所有分類 --</option>'; 
+        cat1s.forEach(c => dc1.add(new Option(c, c)));
+        dc1.addEventListener('change', renderDrugsList);
+    }
+    if(dfm) {
+        const forms = [...new Set(STORE.drugs.map(d => d.form).filter(Boolean))].sort();
+        dfm.innerHTML = '<option value="">-- 所有劑型 --</option>';
+        forms.forEach(f => dfm.add(new Option(f, f)));
+        dfm.addEventListener('change', renderDrugsList);
+    }
+    if(dst) dst.addEventListener('change', renderDrugsList);
     if(dd) dd.addEventListener('change', renderDrugsList);
     if(df) df.addEventListener('input', window.debounce(renderDrugsList, 300));
 };
@@ -47,8 +40,8 @@ window.renderDrugsList = function() {
     
     const fd = document.getElementById('list-dash-domain') ? document.getElementById('list-dash-domain').value : '';
     const fc1 = document.getElementById('list-dash-cat1') ? document.getElementById('list-dash-cat1').value : '';
-    const fc2 = document.getElementById('list-dash-cat2') ? document.getElementById('list-dash-cat2').value : '';
-    const fc3 = document.getElementById('list-dash-cat3') ? document.getElementById('list-dash-cat3').value : '';
+    const ffm = document.getElementById('list-dash-form') ? document.getElementById('list-dash-form').value : '';
+    const fst = document.getElementById('list-dash-status') ? document.getElementById('list-dash-status').value : '';
     const fText = document.getElementById('filter-dash-drugs') ? document.getElementById('filter-dash-drugs').value.toLowerCase().trim() : '';
     
     const dashKeywords = fText ? fText.split(/\s+/) : [];
@@ -56,8 +49,9 @@ window.renderDrugsList = function() {
     const dashDrugs = STORE.drugs.filter(d => {
         if (fd && (d.domain || 'PED') !== fd) return false;
         if (fc1 && d.cat_1 !== fc1) return false;
-        if (fc2 && d.cat_2 !== fc2) return false;
-        if (fc3 && d.cat_3 !== fc3) return false;
+        if (ffm && d.form !== ffm) return false;
+        if (fst && (d.status || 'N') !== fst) return false;
+        
         if (dashKeywords.length > 0) {
             const searchStr = `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''} ${d.cat_1||''}`.toLowerCase();
             if (!dashKeywords.every(kw => searchStr.includes(kw))) return false;
