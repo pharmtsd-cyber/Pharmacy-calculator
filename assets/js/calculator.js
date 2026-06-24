@@ -213,16 +213,13 @@ function renderDrugList(drugsToRender) {
 function selectDrug(drug) {
     currentDrug = drug;
 
-    // 1. 【視覺修復】強制修改 DOM 樣式，而不重繪列表，徹底解決變色失效問題
+    // 1. 強制選中樣式處理
     const allItems = document.querySelectorAll('#category-tree li');
     allItems.forEach(el => {
-        // 移除所有選中相關的 Tailwind classes
         el.classList.remove('bg-blue-100', 'border-[#1B365D]', 'ring-2', 'ring-blue-200', 'shadow-md');
-        // 確保恢復基礎樣式
         el.classList.add('bg-gray-50', 'border-gray-200');
     });
     
-    // 鎖定當前點擊的藥品項目
     const selectedEl = document.getElementById(`drug-item-${drug.drug_id}`);
     if (selectedEl) {
         selectedEl.classList.remove('bg-gray-50', 'border-gray-200');
@@ -230,11 +227,11 @@ function selectDrug(drug) {
         selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // 2. 顯示計算機面板
+    // 2. 顯示右側計算機面板
     document.getElementById('calc-placeholder').classList.add('hidden');
     document.getElementById('calc-panel').classList.remove('hidden');
 
-    // 3. 欄位填入邏輯 (略，與您原本的相同)
+    // 3. 藥品資訊欄位填入
     document.getElementById('drug-right-cats').innerHTML = `
         ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_1}</span>` : ''}
         ${drug.cat_2 ? `<span class="bg-blue-50 text-blue-800 text-[10px] px-1.5 py-0.5 rounded">${drug.cat_2}</span>` : ''}
@@ -244,47 +241,71 @@ function selectDrug(drug) {
     document.getElementById('drug-sub1').innerText = drug.brand_name || '--';
     document.getElementById('drug-sub2').innerText = drug.local_name || '--';
     document.getElementById('drug-sub3').innerText = drug.common_brand || '--';
-    
-    // ... (維持您原有 badge 與 related_drugs 邏輯) ...
 
-    // 4. 【隱藏控制】選定藥品後，先將計算區塊強制顯示 (除非稍後確認沒公式)
-    const calcResultCard = document.getElementById('result-value').parentElement.parentElement;
-    document.getElementById('dynamic-parameters').classList.remove('hidden');
-    calcResultCard.classList.remove('hidden');
+    // (中間的徽章與關聯藥品邏輯不變，請保留您原本的)
+    // ...
 
+    // 【重要修復】明確控制說明卡片的顯隱
+    const instW = document.getElementById('drug-dose-inst-wrapper');
+    if (drug.dose_instruction && drug.dose_instruction.trim() !== '') {
+        document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction;
+        instW.classList.remove('hidden');
+    } else {
+        instW.classList.add('hidden');
+    }
+
+    const suppW = document.getElementById('drug-supplemental-wrapper');
+    if (drug.supplemental_info && drug.supplemental_info.trim() !== '') {
+        document.getElementById('drug-supplemental-content').innerText = drug.supplemental_info;
+        suppW.classList.remove('hidden');
+    } else {
+        suppW.classList.add('hidden');
+    }
+
+    const refW = document.getElementById('drug-ref-wrapper');
+    if (drug.reference_url && drug.reference_url.trim() !== '') {
+        document.getElementById('drug-ref-content').innerText = drug.reference_url;
+        refW.classList.remove('hidden');
+    } else {
+        refW.classList.add('hidden');
+    }
+
+    // 4. 公式處理邏輯
     const targetId = String(drug.drug_id || '').trim().toLowerCase();
     const targetCode = String(drug.drug_code || '').trim().toLowerCase();
-    
     const drugFormulas = STORE.formulas.filter(f => {
         const fId = String(f.drug_id || '').trim().toLowerCase();
         return fId !== '' && (fId === targetId || fId === targetCode);
     });
 
-    const selectEl = document.getElementById('formula-select'); 
+    const selectEl = document.getElementById('formula-select');
     selectEl.innerHTML = '';
     
-    // 5. 【修正：無公式時徹底隱藏計算區塊】
-    if (drugFormulas.length === 0) { 
-        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>'; 
+    const calcResultCard = document.getElementById('result-value').parentElement.parentElement;
+    
+    if (drugFormulas.length === 0) {
+        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>';
         document.getElementById('dynamic-parameters').classList.add('hidden');
         document.getElementById('formula-remark-card').classList.add('hidden');
         document.getElementById('absolute-max-alert').classList.add('hidden');
-        calcResultCard.classList.add('hidden'); // 隱藏結果與處方對比欄
-        resetResult(); 
-        return; 
+        calcResultCard.classList.add('hidden');
+        resetResult();
+    } else {
+        // 有公式才顯示計算區域
+        document.getElementById('dynamic-parameters').classList.remove('hidden');
+        calcResultCard.classList.remove('hidden');
+        
+        drugFormulas.forEach(f => {
+            const option = document.createElement('option');
+            option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
+        });
+        selectEl.onchange = (e) => { 
+            currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
+            renderDynamicParameters(currentFormula); 
+        };
+        currentFormula = drugFormulas[0];
+        renderDynamicParameters(currentFormula);
     }
-
-    drugFormulas.forEach(f => {
-        const option = document.createElement('option'); option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
-    });
-
-    selectEl.onchange = (e) => { 
-        currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
-        renderDynamicParameters(currentFormula); 
-    };
-
-    currentFormula = drugFormulas[0]; 
-    renderDynamicParameters(currentFormula);
 }
 
 function renderDynamicParameters(formula) {
