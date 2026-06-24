@@ -152,7 +152,7 @@
 
                         <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-gray-200 pt-4 px-2"></div>
 
-                        <div class="mt-2 border-t pt-5 bg-blue-50/50 p-5 rounded-lg border border-blue-100 flex flex-col gap-4 shadow-sm">
+                        <div id="calc-result-card" class="mt-2 border-t pt-5 bg-blue-50/50 p-5 rounded-lg border border-blue-100 flex flex-col gap-4 shadow-sm">
                             <div>
                                 <span class="block text-xs font-bold text-gray-600 mb-1">系統計算建議區間：</span>
                                 <div class="flex items-baseline gap-2">
@@ -160,7 +160,7 @@
                                     <span id="result-unit" class="text-sm font-bold text-gray-600"></span>
                                 </div>
                             </div>
-                            <div class="border-t border-blue-200 pt-4">
+                            <div class="border-t border-blue-200 pt-4" id="prescription-compare-section">
                                 <label class="block text-xs font-bold text-blue-800 mb-1"><i class="fa-solid fa-user-doctor mr-1"></i>醫師開立處方劑量比對 (選填)</label>
                                 <div class="flex items-center gap-2">
                                     <input type="number" id="prescribed-dose" step="any" placeholder="輸入處方數字..." class="border border-blue-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] w-48 shadow-inner bg-white">
