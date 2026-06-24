@@ -281,29 +281,43 @@ function selectDrug(drug) {
     const selectEl = document.getElementById('formula-select');
     selectEl.innerHTML = '';
     
+    const compareCard = document.getElementById('prescription-compare-card');
     const calcResultCard = document.getElementById('result-value').parentElement.parentElement;
     
-    if (drugFormulas.length === 0) {
-        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>';
-        document.getElementById('dynamic-parameters').classList.add('hidden');
-        document.getElementById('formula-remark-card').classList.add('hidden');
+    if (drugFormulas.length === 0) { 
+        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>'; 
+        document.getElementById('dynamic-parameters').classList.add('hidden'); 
+        document.getElementById('formula-remark-card').classList.add('hidden'); 
+        document.getElementById('formula-remark').innerText = '';
         document.getElementById('absolute-max-alert').classList.add('hidden');
+        document.getElementById('single-max-text').innerText = '';
+        document.getElementById('daily-max-text').innerText = '';
+        
+        // 隱藏計算相關區域
         calcResultCard.classList.add('hidden');
-        resetResult();
+        if(compareCard) compareCard.classList.add('hidden');
+        
+        resetResult(); 
+        return; 
     } else {
-        // 有公式才顯示計算區域
+        // 有公式才顯示相關區域
         document.getElementById('dynamic-parameters').classList.remove('hidden');
         calcResultCard.classList.remove('hidden');
+        if(compareCard) compareCard.classList.remove('hidden');
         
         drugFormulas.forEach(f => {
-            const option = document.createElement('option');
-            option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
+            const option = document.createElement('option'); 
+            option.value = f.formula_id; 
+            option.innerText = f.formula_name; 
+            selectEl.appendChild(option);
         });
+
         selectEl.onchange = (e) => { 
             currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
             renderDynamicParameters(currentFormula); 
         };
-        currentFormula = drugFormulas[0];
+
+        currentFormula = drugFormulas[0]; 
         renderDynamicParameters(currentFormula);
     }
 }
