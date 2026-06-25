@@ -69,7 +69,8 @@ window.renderDrugsList = function() {
             ? `<button onclick="toggleDrugStatus('${d.drug_id}', 'Y', event)" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-green-200 border border-green-300">上線中</button>`
             : `<button onclick="toggleDrugStatus('${d.drug_id}', 'N', event)" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-200 border border-red-300">未上線</button>`;
 
-        return `<tr class="hover:bg-blue-50 transition">
+        // 【新增】在 tr 標籤加入 id="dash-row-..." 與 duration-500 漸變動畫設定
+        return `<tr id="dash-row-${d.drug_id}" class="hover:bg-blue-50 transition duration-500">
             <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
             <td class="pt-3">
                 <div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div>
