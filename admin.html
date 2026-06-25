@@ -237,11 +237,19 @@
                                 <div><label class="block text-xs font-bold mb-1 text-blue-700">下限公式 (Min)</label><textarea id="admin-formula-min" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-white shadow-inner" placeholder="例如：{weight} * 1.5"></textarea></div>
                                 <div><label class="block text-xs font-bold mb-1 text-blue-700">上限公式 (Max)</label><textarea id="admin-formula-max" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-white shadow-inner" placeholder="例如：{weight} * 2"></textarea></div>
                             </div>
-                            <div class="grid grid-cols-4 gap-2 bg-red-50 p-2 rounded border border-red-100">
-                                <div><label class="block text-[10px] font-bold text-red-700">單次絕對上限</label><input type="number" step="any" id="formula-single-max" class="w-full border rounded p-1 text-xs"></div>
-                                <div><label class="block text-[10px] font-bold text-red-700">單次單位</label><input type="text" id="formula-single-unit" class="w-full border rounded p-1 text-xs"></div>
-                                <div><label class="block text-[10px] font-bold text-red-700">單日絕對上限</label><input type="number" step="any" id="formula-daily-max" class="w-full border rounded p-1 text-xs"></div>
-                                <div><label class="block text-[10px] font-bold text-red-700">單日單位</label><input type="text" id="formula-daily-unit" class="w-full border rounded p-1 text-xs"></div>
+                            <div class="grid grid-cols-2 gap-2 bg-red-50 p-2 rounded border border-red-100 mt-1">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-red-700">單次絕對上限公式</label>
+                                    <textarea id="formula-single-max" rows="2" class="w-full border rounded p-1 text-xs font-mono" placeholder="{weight} * 20"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-red-700">單日絕對上限公式</label>
+                                    <textarea id="formula-daily-max" rows="2" class="w-full border rounded p-1 text-xs font-mono" placeholder="{weight} * 50"></textarea>
+                                </div>
+                                <div class="col-span-2 grid grid-cols-2 gap-2">
+                                    <input type="text" id="formula-single-unit" placeholder="單次單位(如: mg)" class="w-full border rounded p-1 text-xs">
+                                    <input type="text" id="formula-daily-unit" placeholder="單日單位(如: mg)" class="w-full border rounded p-1 text-xs">
+                                </div>
                             </div>
                         </div>
 
