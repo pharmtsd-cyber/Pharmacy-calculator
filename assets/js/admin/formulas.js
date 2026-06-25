@@ -126,6 +126,8 @@ window.resetFormulaForm = function() {
     document.getElementById('admin-formula-name').value = '';
     document.getElementById('admin-result-unit').value = '';
     document.getElementById('admin-remark').value = '';
+    
+    // 清除一般區間欄位
     document.getElementById('admin-formula-min').value = '';
     document.getElementById('admin-formula-max').value = '';
     document.getElementById('formula-single-max').value = '';
@@ -133,10 +135,11 @@ window.resetFormulaForm = function() {
     document.getElementById('formula-daily-max').value = '';
     document.getElementById('formula-daily-unit').value = '';
     
-    document.querySelector('input[value="basic"]').checked = true;
+    // 徹底清除矩陣規則陣列與 UI
     window.matrixRules = [];
-    window.toggleFormulaMode();
     window.renderMatrixRulesUI();
+    
+    // 重新載入參數按鈕 (包含 {prescribed})
     window.renderAdminParamPad();
 };
 
