@@ -458,8 +458,14 @@ function executeCalculation() {
         }
         
         const matrixTextEl = document.getElementById('matrix-result-text');
-        if(matrixTextEl) matrixTextEl.innerText = matchedResult;
-        matrixSection.classList.remove('hidden');
+        if (matchedResult !== "⚠️ 條件未命中" && matrixTextEl) {
+            matrixTextEl.innerText = matchedResult; // 這裡會保留您 textarea 的換行符號
+            matrixSection.classList.remove('hidden');
+        } else if (matchedResult !== "⚠️ 條件未命中") {
+            // 如果找不到 matrix-result-text 這個 ID，確保舊的寫法也有效
+            matrixSection.innerText = matchedResult;
+            matrixSection.classList.remove('hidden');
+        }
     }
 }
 
