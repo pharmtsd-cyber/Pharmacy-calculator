@@ -416,22 +416,47 @@ function executeCalculation() {
         baseSection.classList.add('hidden');
     }
 
-    // 2. 執行進階動態矩陣判斷
+// 3. 執行進階動態矩陣判斷
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResult = "⚠️ 數值超出所有設定的安全條件範圍";
+        
+        // 確保迴圈中的變數宣告正確
         for (let rule of currentFormula.parsedMatrixRules) {
-            // ... (解析 evalCondition 的邏輯保持不變)
+            let evalCondition = rule.condition;
             
+            // 參數替換
+            for(let code in scopeVals) {
+                const regex = new RegExp(`{${code}}`, 'gi');
+                evalCondition = evalCondition.replace(regex, scopeVals[code] || 0);
+            }
+            
+            // 轉換邏輯運算子
+            let sanitizedCondition = evalCondition.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
+
             try {
-                if (evalCondition.trim() === '' || math.evaluate(evalCondition)) {
-                    // ... (處理 evalOutput 的邏輯保持不變)
+                // 如果條件空白或是判定為 True
+                if (sanitizedCondition.trim() === '' || math.evaluate(sanitizedCondition)) {
+                    let evalOutput = rule.result;
+                    
+                    // 輸出結果文字替換
+                    for(let code in scopeVals) {
+                        const regex = new RegExp(`{${code}}`, 'gi');
+                        evalOutput = evalOutput.replace(regex, scopeVals[code] || 0);
+                    }
+                    
+                    // 解析輸出中的 [[數學公式]]
+                    evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
+                        try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
+                    });
+                    
                     matchedResult = evalOutput;
-                    break; 
+                    break; // 命中條件即跳出
                 }
-            } catch(e) { console.warn("矩陣錯誤:", evalCondition); }
+            } catch(e) { 
+                console.warn("矩陣判定錯誤:", sanitizedCondition, e); 
+            }
         }
         
-        // 【新增】將結果放入新的文字容器，並顯示區塊
         const matrixTextEl = document.getElementById('matrix-result-text');
         if(matrixTextEl) matrixTextEl.innerText = matchedResult;
         matrixSection.classList.remove('hidden');
