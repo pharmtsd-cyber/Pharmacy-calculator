@@ -1,27 +1,225 @@
+window.matrixRules = []; // 全域變數：暫存當前公式的矩陣規則
+
 document.addEventListener('DOMContentLoaded', () => {
-    if(document.getElementById('btn-save-formula')) document.getElementById('btn-save-formula').onclick = saveFormula;
-
-    let ACTIVE_FORMULA_INPUT = 'admin-formula-min';
-    const minI = document.getElementById('admin-formula-min'), maxI = document.getElementById('admin-formula-max');
-    if(minI) { minI.addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-min'); minI.addEventListener('input', window.debounce(generateTestInputs, 300)); }
-    if(maxI) { maxI.addEventListener('focus', () => ACTIVE_FORMULA_INPUT = 'admin-formula-max'); maxI.addEventListener('input', window.debounce(generateTestInputs, 300)); }
-
-    document.querySelectorAll('.op-btn').forEach(btn => {
-        btn.onclick = (e) => {
-            const textarea = document.getElementById(ACTIVE_FORMULA_INPUT);
-            if(!textarea) return;
-            const startPos = textarea.selectionStart;
-            const textToInsert = ` ${e.target.innerText} `;
-            textarea.value = textarea.value.substring(0, startPos) + textToInsert + textarea.value.substring(textarea.selectionEnd);
-            textarea.selectionStart = textarea.selectionEnd = startPos + textToInsert.length;
-            textarea.focus(); generateTestInputs();
-        };
+    // 綁定輸入框游標追蹤，供參數按鈕插入使用
+    document.querySelectorAll('#admin-formula-min, #admin-formula-max').forEach(el => {
+        el.addEventListener('focus', function() { window.lastFocusedFormulaInput = this; });
+        el.addEventListener('click', function() { window.lastFocusedFormulaInput = this; });
+        el.addEventListener('keyup', function() { window.lastFocusedFormulaInput = this; });
     });
-
-    setupFormulaDrugSearch();
+    
+    // 初始化參數按鈕面板
+    renderAdminParamPad();
+    setupFormulaDrugDropdown();
 });
 
-function setupFormulaDrugSearch() {
+// 【核心 1】雙軌模式切換
+window.toggleFormulaMode = function() {
+    const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
+    const maxContainer = document.getElementById('absolute-max-container');
+    
+    if (mode === 'matrix') {
+        document.getElementById('mode-basic-container').classList.add('hidden');
+        document.getElementById('mode-matrix-container').classList.remove('hidden');
+        // 矩陣模式時，將絕對上限區塊變灰且禁止輸入 (因文字結果不受純數值上限控管)
+        maxContainer.classList.add('opacity-40', 'pointer-events-none');
+    } else {
+        document.getElementById('mode-basic-container').classList.remove('hidden');
+        document.getElementById('mode-matrix-container').classList.add('hidden');
+        maxContainer.classList.remove('opacity-40', 'pointer-events-none');
+    }
+};
+
+// 【核心 2】矩陣規則的 CRUD 邏輯
+window.addMatrixRule = function(condition = '', result = '') {
+    const ruleId = 'rule_' + Date.now() + Math.floor(Math.random() * 1000);
+    window.matrixRules.push({ id: ruleId, condition, result });
+    renderMatrixRulesUI();
+};
+
+window.removeMatrixRule = function(ruleId) {
+    window.matrixRules = window.matrixRules.filter(r => r.id !== ruleId);
+    renderMatrixRulesUI();
+};
+
+window.updateMatrixRule = function(ruleId, field, value) {
+    const rule = window.matrixRules.find(r => r.id === ruleId);
+    if (rule) rule[field] = value;
+};
+
+window.moveMatrixRule = function(index, direction) {
+    if (direction === 'up' && index > 0) {
+        const temp = window.matrixRules[index];
+        window.matrixRules[index] = window.matrixRules[index - 1];
+        window.matrixRules[index - 1] = temp;
+    } else if (direction === 'down' && index < window.matrixRules.length - 1) {
+        const temp = window.matrixRules[index];
+        window.matrixRules[index] = window.matrixRules[index + 1];
+        window.matrixRules[index + 1] = temp;
+    }
+    renderMatrixRulesUI();
+};
+
+window.renderMatrixRulesUI = function() {
+    const container = document.getElementById('matrix-rules-list');
+    if (!container) return;
+    
+    container.innerHTML = window.matrixRules.map((rule, index) => `
+        <div class="flex gap-2 items-start bg-white p-2.5 border border-indigo-200 rounded shadow-sm hover:border-indigo-400 transition">
+            <div class="flex flex-col gap-1 items-center justify-center pt-1">
+                <button type="button" onclick="window.moveMatrixRule(${index}, 'up')" class="text-gray-400 hover:text-indigo-600 disabled:opacity-30" ${index === 0 ? 'disabled' : ''}><i class="fa-solid fa-caret-up"></i></button>
+                <span class="bg-indigo-100 text-indigo-800 font-bold text-[10px] px-1.5 py-0.5 rounded">#${index + 1}</span>
+                <button type="button" onclick="window.moveMatrixRule(${index}, 'down')" class="text-gray-400 hover:text-indigo-600 disabled:opacity-30" ${index === window.matrixRules.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-caret-down"></i></button>
+            </div>
+            
+            <div class="flex-grow flex flex-col gap-1.5">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-gray-500 w-10 text-right"><i class="fa-solid fa-code-branch"></i> IF</span>
+                    <input type="text" value="${rule.condition}" onchange="updateMatrixRule('${rule.id}', 'condition', this.value)" placeholder="判斷條件 (例: {CrCl} >= 50)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs font-mono focus:border-indigo-500 focus:bg-indigo-50 shadow-inner">
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-green-600 w-10 text-right"><i class="fa-solid fa-arrow-right"></i> THEN</span>
+                    <input type="text" value="${rule.result}" onchange="updateMatrixRule('${rule.id}', 'result', this.value)" placeholder="輸出文字建議 (例: 1g Q8H)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs focus:border-green-500 focus:bg-green-50 shadow-inner">
+                </div>
+            </div>
+            <button type="button" onclick="removeMatrixRule('${rule.id}')" class="text-red-400 hover:text-red-600 mt-3 px-1"><i class="fa-solid fa-trash-can"></i></button>
+        </div>
+    `).join('');
+};
+
+// 【核心 3】導航與資料載入
+window.goToAddFormula = function(drugId = '') {
+    resetFormulaForm();
+    document.getElementById('formula-editor-title').innerText = "新增計算公式";
+    if (drugId) {
+        document.getElementById('formula-drug-id-hidden').value = drugId;
+        renderFormulaDrugTag(drugId);
+    }
+    switchTab('formulas');
+    scrollToTop();
+};
+
+window.goToFormulaEdit = function(drugId, formulaId) {
+    const f = STORE.formulas.find(x => x.formula_id === formulaId);
+    if (!f) return;
+    
+    resetFormulaForm();
+    document.getElementById('formula-editor-title').innerText = "編輯計算公式";
+    document.getElementById('formula-mode').value = 'edit';
+    document.getElementById('formula-id').value = f.formula_id;
+    document.getElementById('formula-drug-id-hidden').value = drugId;
+    
+    renderFormulaDrugTag(drugId);
+
+    document.getElementById('admin-formula-name').value = f.formula_name || '';
+    document.getElementById('admin-result-unit').value = f.result_unit || '';
+    document.getElementById('admin-remark').value = f.remark || '';
+    document.getElementById('admin-formula-min').value = f.formula_min || '';
+    document.getElementById('admin-formula-max').value = f.formula_max || '';
+    document.getElementById('formula-single-max').value = f.single_max || '';
+    document.getElementById('formula-single-unit').value = f.single_max_unit || '';
+    document.getElementById('formula-daily-max').value = f.daily_max || '';
+    document.getElementById('formula-daily-unit').value = f.daily_max_unit || '';
+
+    // 載入矩陣規則
+    if (f.matrix_rules && f.matrix_rules.trim() !== '' && f.matrix_rules !== '[]') {
+        try {
+            window.matrixRules = JSON.parse(f.matrix_rules);
+            document.querySelector('input[value="matrix"]').checked = true;
+        } catch(e) {
+            window.matrixRules = [];
+            document.querySelector('input[value="basic"]').checked = true;
+        }
+    } else {
+        window.matrixRules = [];
+        document.querySelector('input[value="basic"]').checked = true;
+    }
+    
+    window.toggleFormulaMode();
+    window.renderMatrixRulesUI();
+    
+    switchTab('formulas');
+    scrollToTop();
+};
+
+window.resetFormulaForm = function() {
+    document.getElementById('formula-mode').value = 'add';
+    document.getElementById('formula-id').value = '';
+    document.getElementById('formula-drug-id-hidden').value = '';
+    document.getElementById('tags-formulaDrug').innerHTML = '';
+    document.getElementById('input-formulaDrug').value = '';
+    document.getElementById('admin-formula-name').value = '';
+    document.getElementById('admin-result-unit').value = '';
+    document.getElementById('admin-remark').value = '';
+    document.getElementById('admin-formula-min').value = '';
+    document.getElementById('admin-formula-max').value = '';
+    document.getElementById('formula-single-max').value = '';
+    document.getElementById('formula-single-unit').value = '';
+    document.getElementById('formula-daily-max').value = '';
+    document.getElementById('formula-daily-unit').value = '';
+    
+    // 初始化為 Basic 模式
+    document.querySelector('input[value="basic"]').checked = true;
+    window.matrixRules = [];
+    window.toggleFormulaMode();
+    window.renderMatrixRulesUI();
+};
+
+// 【核心 4】綁定與儲存
+window.saveFormula = async function() {
+    const drugId = document.getElementById('formula-drug-id-hidden').value;
+    const formulaName = document.getElementById('admin-formula-name').value.trim();
+    
+    if (!drugId || !formulaName) {
+        return alert("請務必【綁定藥品】並填寫【計算方法名稱】！");
+    }
+
+    const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
+    const matrixStr = (mode === 'matrix') ? JSON.stringify(window.matrixRules) : "";
+
+    // 按鈕特效
+    const btn = document.getElementById('btn-save-formula');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> 儲存中...`;
+    btn.disabled = true;
+
+    const payload = {
+        action: 'saveFormula',
+        mode: document.getElementById('formula-mode').value,
+        formula_id: document.getElementById('formula-id').value,
+        drug_id: drugId,
+        formula_name: formulaName,
+        result_unit: document.getElementById('admin-result-unit').value.trim(),
+        remark: document.getElementById('admin-remark').value.trim(),
+        formula_min: document.getElementById('admin-formula-min').value.trim(),
+        formula_max: document.getElementById('admin-formula-max').value.trim(),
+        single_max: document.getElementById('formula-single-max').value,
+        single_max_unit: document.getElementById('formula-single-unit').value.trim(),
+        daily_max: document.getElementById('formula-daily-max').value,
+        daily_max_unit: document.getElementById('formula-daily-unit').value.trim(),
+        matrix_rules: matrixStr // 將陣列轉為字串送給 GAS
+    };
+    
+    await sendPost(payload); 
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+    
+    window.returnToDashboard(drugId); 
+};
+
+window.renderFormulaDrugTag = function(drugId) {
+    const container = document.getElementById('tags-formulaDrug');
+    const d = STORE.drugs.find(x => String(x.drug_id) === String(drugId) || String(x.drug_code) === String(drugId));
+    if (d) {
+        container.innerHTML = `<span class="bg-purple-100 border border-purple-300 text-purple-900 rounded px-2 py-1 text-sm font-bold shadow-sm flex items-center gap-2">
+            ${d.drug_code||'--'} ${d.generic_name||'無學名'}
+            <i class="fa-solid fa-xmark cursor-pointer text-purple-400 hover:text-red-500 ml-1" onclick="document.getElementById('tags-formulaDrug').innerHTML=''; document.getElementById('formula-drug-id-hidden').value='';"></i>
+        </span>`;
+        document.getElementById('input-formulaDrug').value = '';
+    }
+};
+
+window.setupFormulaDrugDropdown = function() {
     const input = document.getElementById('input-formulaDrug');
     const drop = document.getElementById('drop-formulaDrug');
     if(!input || !drop) return;
@@ -29,7 +227,6 @@ function setupFormulaDrugSearch() {
     const updateDrop = () => {
         const keyword = input.value.toLowerCase().trim();
         const keywords = keyword ? keyword.split(/\s+/) : [];
-        
         const filtered = STORE.drugs.filter(item => {
             if(keywords.length === 0) return true;
             const searchStr = `${item.drug_code||''} ${item.local_name||''} ${item.generic_name||''} ${item.brand_name||''} ${item.common_brand||''}`.toLowerCase();
@@ -37,167 +234,35 @@ function setupFormulaDrugSearch() {
         });
         
         const html = filtered.map(item => {
-            const label = `<span class="text-orange-600 font-bold mr-1">${item.drug_code||''}</span> <span class="text-blue-900 font-bold">${item.generic_name||''}</span> <span class="text-gray-500 text-xs ml-1">${item.local_name||''} ${item.brand_name||''}</span>`;
-            return `<div class="p-2 text-sm hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-0 truncate" 
-                         onclick="setFormulaDrug('${item.drug_id}', '${(item.drug_code||'') + ' ' + (item.local_name||item.generic_name||'').replace(/'/g, "\\'")}')">${label}</div>`;
+            return `<div class="p-2 text-sm hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-0 truncate" onclick="document.getElementById('formula-drug-id-hidden').value='${item.drug_id}'; window.renderFormulaDrugTag('${item.drug_id}'); document.getElementById('drop-formulaDrug').classList.add('hidden');">
+                <span class="text-orange-600 font-bold mr-1">${item.drug_code||''}</span> <span class="text-blue-900 font-bold">${item.generic_name||''}</span> <span class="text-gray-500 text-xs ml-1">${item.local_name||''}</span>
+            </div>`;
         }).join('');
-        
-        drop.innerHTML = html || '<div class="p-2 text-xs text-gray-500 text-center">無符合藥品</div>';
+        drop.innerHTML = html || '<div class="p-2 text-xs text-gray-500 text-center">無符合資料</div>';
         drop.classList.remove('hidden');
     };
 
     input.addEventListener('focus', updateDrop);
     input.addEventListener('input', window.debounce(updateDrop, 300));
     document.addEventListener('click', (e) => { if (!input.contains(e.target) && !drop.contains(e.target)) drop.classList.add('hidden'); });
-}
-
-window.setFormulaDrug = function(drugId, displayLabel) {
-    document.getElementById('formula-drug-id-hidden').value = drugId;
-    document.getElementById('tags-formulaDrug').innerHTML = `
-        <div class="bg-purple-100 border border-purple-300 text-purple-900 rounded px-3 py-1.5 text-sm font-bold flex items-center justify-between w-full shadow-sm">
-            <span><i class="fa-solid fa-pills mr-1 text-purple-600"></i> ${displayLabel}</span>
-            <i class="fa-solid fa-xmark cursor-pointer text-purple-400 hover:text-red-600 ml-2 text-lg px-2" onclick="removeFormulaDrug()"></i>
-        </div>`;
-    document.getElementById('input-formulaDrug').classList.add('hidden');
-    document.getElementById('drop-formulaDrug').classList.add('hidden');
 };
 
-window.removeFormulaDrug = function() {
-    document.getElementById('formula-drug-id-hidden').value = '';
-    document.getElementById('tags-formulaDrug').innerHTML = '';
-    const inp = document.getElementById('input-formulaDrug');
-    inp.classList.remove('hidden');
-    inp.value = '';
-    inp.focus();
-};
-
-window.goToAddFormula = function(prefillDrugId = null) {
-    resetFormulaForm();
-    document.getElementById('formula-editor-title').innerText = "新增計算公式";
-    
-    if (prefillDrugId) {
-        const d = STORE.drugs.find(x => String(x.drug_id) === String(prefillDrugId) || String(x.drug_code) === String(prefillDrugId));
-        if (d) {
-            const label = `${d.drug_code||''} ${d.local_name||d.generic_name||''}`;
-            setFormulaDrug(d.drug_id, label);
-        }
-    }
-    
-    switchTab('formulas');
-    scrollToTop();
-};
-
-window.goToFormulaEdit = function(drugId, formulaId) {
-    const f = STORE.formulas.find(x => x.formula_id === formulaId);
-    if(!f) return;
-    
-    resetFormulaForm();
-    
-    const d = STORE.drugs.find(x => String(x.drug_id) === String(drugId) || String(x.drug_code) === String(drugId));
-    if (d) {
-        const label = `${d.drug_code||''} ${d.local_name||d.generic_name||''}`;
-        setFormulaDrug(d.drug_id, label);
-    } else {
-        setFormulaDrug(f.drug_id, "遺失藥品關聯 (舊資料 ID: " + f.drug_id + ")");
-    }
-
-    const setVal = (elId, val) => { if(document.getElementById(elId)) document.getElementById(elId).value = val; };
-    setVal('formula-mode', 'edit'); setVal('formula-id', f.formula_id);
-    setVal('admin-formula-name', f.formula_name); setVal('admin-result-unit', f.result_unit);
-    
-    // 【保護】確保能載入多行字串
-    setVal('admin-remark', f.remark || ''); 
-    
-    setVal('formula-single-max', f.single_max || '');
-    setVal('formula-single-unit', f.single_max_unit || ''); setVal('formula-daily-max', f.daily_max || '');
-    setVal('formula-daily-unit', f.daily_max_unit || ''); setVal('admin-formula-min', f.formula_min || '');
-    setVal('admin-formula-max', f.formula_max || '');
-    
-    generateTestInputs();
-    document.getElementById('formula-editor-title').innerText = "編輯公式：" + f.formula_name;
-    
-    switchTab('formulas');
-    scrollToTop();
-};
-
-window.resetFormulaForm = function() {
-    const setVal = (elId, val) => { if(document.getElementById(elId)) document.getElementById(elId).value = val; };
-    setVal('formula-mode', 'add'); setVal('formula-id', '');
-    ['admin-formula-name','admin-result-unit','admin-remark','formula-single-max','formula-single-unit','formula-daily-max','formula-daily-unit','admin-formula-min','admin-formula-max'].forEach(id => setVal(id, ''));
-    
-    removeFormulaDrug();
-
-    const testInp = document.getElementById('admin-test-inputs');
-    if(testInp) testInp.innerHTML = '請先輸入公式'; 
-    const testRes = document.getElementById('admin-test-result');
-    if(testRes) testRes.innerText = '-- ~ --';
-};
-
-window.saveFormula = async function() {
-    const assignedDrugId = document.getElementById('formula-drug-id-hidden').value;
-    if (!assignedDrugId) return alert("請先從上方搜尋並點擊綁定一個藥品！");
-
-    const getVal = id => document.getElementById(id) ? document.getElementById(id).value : '';
-    const payload = {
-        action: 'saveFormula', mode: getVal('formula-mode'), formula_id: getVal('formula-id'), drug_id: assignedDrugId,
-        formula_name: getVal('admin-formula-name'), formula_min: getVal('admin-formula-min'), formula_max: getVal('admin-formula-max'), result_unit: getVal('admin-result-unit'),
-        single_max: getVal('formula-single-max'), single_max_unit: getVal('formula-single-unit'), daily_max: getVal('formula-daily-max'), daily_max_unit: getVal('formula-daily-unit'), 
-        // 【保護】明確擷取備註內容
-        remark: getVal('admin-remark') 
-    };
-    if(!payload.formula_name) return alert("計算方法名稱為必填");
-    
-    // 如果是純文字說明，不強制填寫 min/max 公式
-    const minVal = getVal('admin-formula-min').trim();
-    const maxVal = getVal('admin-formula-max').trim();
-    if(minVal === '' && maxVal === '' && payload.remark.trim() === '') {
-        return alert("請至少輸入「下限公式」或「備註提醒」的其中一項！");
-    }
-
-    await sendPost(payload); 
-    returnToDashboard();
-};
-
-window.renderParameterPad = function() {
-    let activeInput = window.ACTIVE_FORMULA_INPUT || 'admin-formula-min';
+window.renderAdminParamPad = function() {
     const pad = document.getElementById('admin-param-pad');
-    if(pad) pad.innerHTML = STORE.parameters.map(p => `<button type="button" class="text-xs bg-[#1B365D] text-white px-2 py-1 rounded hover:bg-blue-800" onclick="const ta=document.getElementById('${activeInput}'); ta.value = ta.value.substring(0, ta.selectionStart) + '{${p.param_code}}' + ta.value.substring(ta.selectionEnd); generateTestInputs();">${p.param_name}</button>`).join('');
+    if(!pad) return;
+    pad.innerHTML = STORE.parameters.map(p => `<button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{${p.param_code}}')">${p.param_name} <span class="text-gray-400 font-normal ml-0.5">{${p.param_code}}</span></button>`).join('');
+    
+    // 綁定運算子按鈕 (給 Basic 模式用)
+    document.querySelectorAll('.op-btn').forEach(btn => {
+        btn.onclick = function() { insertParamToFormula(' ' + this.innerText + ' '); };
+    });
 };
 
-window.generateTestInputs = function() {
-    const fMin = document.getElementById('admin-formula-min') ? document.getElementById('admin-formula-min').value : '';
-    const fMax = document.getElementById('admin-formula-max') ? document.getElementById('admin-formula-max').value : '';
-    const combinedStr = fMin + " " + fMax;
-    
-    const uniqueCodes = new Set(); let match; const paramRegex = /{([^}]+)}/g; 
-    while ((match = paramRegex.exec(combinedStr)) !== null) uniqueCodes.add(match[1]);
-    
-    const testContainer = document.getElementById('admin-test-inputs');
-    if(!testContainer) return;
-    
-    if (uniqueCodes.size === 0) { testContainer.innerHTML = '尚無參數'; document.getElementById('admin-test-result').innerText = '-- ~ --'; return; }
-    
-    const oldValues = {}; document.querySelectorAll('.test-input').forEach(input => oldValues[input.getAttribute('data-testcode')] = input.value);
-    testContainer.innerHTML = '';
-    uniqueCodes.forEach(code => {
-        const paramDef = STORE.parameters.find(p => p.param_code === code), displayName = paramDef ? paramDef.param_name : code;
-        testContainer.innerHTML += `<div><label class="block text-[10px] font-bold">${displayName}</label><input type="number" data-testcode="${code}" class="test-input w-full border border-blue-300 rounded px-1 py-0.5 text-xs focus:border-[#1B365D]" value="${oldValues[code]||''}"></div>`;
-    });
-    document.querySelectorAll('.test-input').forEach(input => input.addEventListener('input', runLiveTest)); runLiveTest();
-};
-
-window.runLiveTest = function() {
-    let fMin = document.getElementById('admin-formula-min') ? document.getElementById('admin-formula-min').value : '';
-    let fMax = document.getElementById('admin-formula-max') ? document.getElementById('admin-formula-max').value : '';
-    
-    document.querySelectorAll('.test-input').forEach(input => { 
-        const val = input.value || '0', regex = new RegExp(`{${input.getAttribute('data-testcode')}}`, 'g');
-        fMin = fMin.replace(regex, val); fMax = fMax.replace(regex, val);
-    });
-    let resMin = '--', resMax = '--';
-    try { if (fMin.trim()) resMin = Math.round(math.evaluate(fMin) * 100) / 100; } catch(e){}
-    try { if (fMax.trim()) resMax = Math.round(math.evaluate(fMax) * 100) / 100; } catch(e){}
-    
-    const resEl = document.getElementById('admin-test-result');
-    if(resEl) resEl.innerText = (fMax.trim() && resMax !== '--') ? `${resMin} ~ ${resMax}` : `${resMin}`;
+window.insertParamToFormula = function(text) {
+    const input = window.lastFocusedFormulaInput || document.getElementById('admin-formula-min');
+    if (!input) return;
+    const start = input.selectionStart, end = input.selectionEnd;
+    input.value = input.value.substring(0, start) + text + input.value.substring(end);
+    input.focus();
+    input.setSelectionRange(start + text.length, start + text.length);
 };
