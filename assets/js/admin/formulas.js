@@ -101,17 +101,17 @@ window.goToFormulaEdit = function(drugId, formulaId) {
     document.getElementById('formula-daily-max').value = f.daily_max || '';
     document.getElementById('formula-daily-unit').value = f.daily_max_unit || '';
 
+    // 【修正核心】直接讀取矩陣資料，不再進行切換按鈕的邏輯
     if (f.matrix_rules && f.matrix_rules.trim() !== '' && f.matrix_rules !== '[]') {
         try {
             window.matrixRules = JSON.parse(f.matrix_rules);
-            document.querySelector('input[value="matrix"]').checked = true;
-        } catch(e) { window.matrixRules = []; document.querySelector('input[value="basic"]').checked = true; }
+        } catch(e) {
+            window.matrixRules = [];
+        }
     } else {
         window.matrixRules = [];
-        document.querySelector('input[value="basic"]').checked = true;
     }
     
-    window.toggleFormulaMode();
     window.renderMatrixRulesUI();
     switchTab('formulas');
     scrollToTop();
