@@ -227,14 +227,6 @@ function selectDrug(drug) {
         relContainer.classList.remove('hidden');
     } else relContainer.classList.add('hidden');
 
-    const rightMetaContainer = document.getElementById('drug-sub3').parentElement.parentElement;
-    let formRow = document.getElementById('drug-form-row');
-    if (!formRow) {
-        formRow = document.createElement('div'); formRow.id = 'drug-form-row'; formRow.className = 'flex mt-1 pt-2 border-t border-gray-100'; 
-        rightMetaContainer.appendChild(formRow); 
-    }
-    formRow.innerHTML = `<span class="w-24 font-bold text-gray-500">主要劑型</span><span class="font-medium text-gray-800">${drug.form || '--'}</span>`;
-
     const instW = document.getElementById('drug-dose-inst-wrapper');
     if (drug.dose_instruction && drug.dose_instruction.trim() !== '') { document.getElementById('drug-dose-inst-content').innerText = drug.dose_instruction; instW.classList.remove('hidden'); } else instW.classList.add('hidden');
     const suppW = document.getElementById('drug-supplemental-wrapper');
