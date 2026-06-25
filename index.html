@@ -156,26 +156,16 @@
                         </div>
 
                         <div id="calc-result-card" class="hidden bg-blue-50/50 p-5 rounded-xl border border-blue-200 shadow-sm flex flex-col gap-4">
-                            <label class="block text-sm font-bold text-blue-900 border-b border-blue-200 pb-2"><i class="fa-solid fa-laptop-medical mr-1"></i> Step 3. 系統評估結果</label>
+                            <label class="block text-sm font-bold text-blue-900 border-b border-blue-200 pb-2"><i class="fa-solid fa-laptop-medical mr-1"></i> 系統評估結果</label>
                             
                             <div id="base-range-section">
-                                <span class="block text-xs font-bold text-gray-500 mb-1">系統計算建議區間：</span>
+                                <span class="block text-xs font-bold text-gray-500 mb-1">計算建議劑量：</span>
                                 <div class="flex items-baseline gap-2">
                                     <span id="result-value" class="text-3xl font-extrabold text-[#1B365D]">--</span>
-                                    <span id="result-unit" class="text-sm font-bold text-gray-600"></span>
+                                    <span id="result-unit" class="text-lg font-bold text-gray-600"></span>
                                 </div>
                             </div>
-
-                            <div id="matrix-result-section" class="hidden mt-1 p-3 bg-indigo-100 border-l-4 border-indigo-500 rounded text-indigo-900 font-bold text-sm whitespace-pre-wrap shadow-sm"></div>
-
-                            <div class="border-t border-blue-200 pt-4 mt-2" id="prescription-compare-section">
-                                <label class="block text-xs font-bold text-blue-800 mb-2"><i class="fa-solid fa-user-doctor mr-1"></i>醫師開立處方劑量比對 (選填) <span class="font-normal text-gray-500 ml-1">輸入後系統將自動比對上述區間或條件</span></label>
-                                <div class="flex items-center gap-2">
-                                    <input type="number" id="prescribed-dose" step="any" placeholder="輸入處方數字..." class="border border-blue-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] w-48 shadow-inner bg-white">
-                                    <span class="text-sm font-bold text-gray-600 prescribed-unit-display"></span>
-                                </div>
-                                <div id="dose-eval-msg" class="text-sm font-bold mt-3 hidden flex items-center gap-1.5 p-2.5 rounded shadow-sm"></div>
-                            </div>
+                            <div id="matrix-result-section" class="hidden mt-1 p-3 bg-indigo-50 border-l-4 border-indigo-500 rounded text-indigo-900 font-bold text-sm whitespace-pre-wrap shadow-sm"></div>
                         </div>
 
                         <div class="mt-4 flex flex-col gap-3">
