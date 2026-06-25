@@ -382,7 +382,7 @@ function executeCalculation() {
     const baseSection = document.getElementById('base-range-section');
     const matrixSection = document.getElementById('matrix-result-section');
     
-    // 【體驗優化】如果參數未填完，直接清空顯示並離開
+    // 【體驗優化】參數未填完時，清除結果顯示
     if (!allFilled && inputs.length > 0) { 
         resultEl.innerText = "--";
         baseSection.classList.add('hidden');
@@ -391,7 +391,8 @@ function executeCalculation() {
     }
 
     calculatedMin = null; calculatedMax = null;
-    matrixSection.classList.add('hidden'); matrixSection.innerText = '';
+    matrixSection.classList.add('hidden'); 
+    matrixSection.innerText = '';
 
     // 協助計算公式 (支援參數替換)
     const evalFormula = (f) => {
@@ -415,18 +416,7 @@ function executeCalculation() {
         baseSection.classList.add('hidden');
     }
 
-    // 2. 執行絕對上限計算 (公式化)
-    const sMax = evalFormula(currentFormula.single_max);
-    const dMax = evalFormula(currentFormula.daily_max);
-    if(sMax !== null || dMax !== null) {
-        document.getElementById('single-max-text').innerText = sMax !== null ? `單次上限: ${sMax} ${currentFormula.single_max_unit||''}` : '';
-        document.getElementById('daily-max-text').innerText = dMax !== null ? `單日上限: ${dMax} ${currentFormula.daily_max_unit||''}` : '';
-        document.getElementById('absolute-max-alert').classList.remove('hidden');
-    } else {
-        document.getElementById('absolute-max-alert').classList.add('hidden');
-    }
-
-    // 3. 執行進階動態矩陣判斷
+    // 2. 執行進階動態矩陣判斷
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResult = "⚠️ 數值超出所有設定的安全條件範圍，請重新確認";
         for (let rule of currentFormula.parsedMatrixRules) {
@@ -442,6 +432,7 @@ function executeCalculation() {
                     for(let code in scopeVals) {
                         evalOutput = evalOutput.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
                     }
+                    // 【運算功能】解析輸出中的 [[ ]] 數學式
                     evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
                         try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
                     });
