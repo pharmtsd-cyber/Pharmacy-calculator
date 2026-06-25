@@ -1,4 +1,4 @@
-window.matrixRules = []; // 全域變數：暫存當前公式的矩陣規則
+window.matrixRules = []; 
 
 document.addEventListener('DOMContentLoaded', () => {
     // 綁定輸入框游標追蹤
@@ -8,26 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('keyup', function() { window.lastFocusedFormulaInput = this; });
     });
     
-    // ⚠️ 已經將 renderAdminParamPad() 移出，避免提早渲染
     setupFormulaDrugDropdown();
 });
-
-// 【核心 1】雙軌模式切換
-window.toggleFormulaMode = function() {
-    const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
-    const maxContainer = document.getElementById('absolute-max-container');
-    
-    if (mode === 'matrix') {
-        document.getElementById('mode-basic-container').classList.add('hidden');
-        document.getElementById('mode-matrix-container').classList.remove('hidden');
-        // 矩陣模式時，將絕對上限區塊變灰且禁止輸入 (因文字結果不受純數值上限控管)
-        maxContainer.classList.add('opacity-40', 'pointer-events-none');
-    } else {
-        document.getElementById('mode-basic-container').classList.remove('hidden');
-        document.getElementById('mode-matrix-container').classList.add('hidden');
-        maxContainer.classList.remove('opacity-40', 'pointer-events-none');
-    }
-};
 
 // 【核心 2】矩陣規則的 CRUD 邏輯
 window.addMatrixRule = function(condition = '', result = '') {
@@ -78,7 +60,7 @@ window.renderMatrixRulesUI = function() {
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold text-green-600 w-10 text-right"><i class="fa-solid fa-arrow-right"></i> THEN</span>
-                    <input type="text" value="${rule.result}" onchange="updateMatrixRule('${rule.id}', 'result', this.value)" onfocus="window.lastFocusedFormulaInput = this" onclick="window.lastFocusedFormulaInput = this" onkeyup="window.lastFocusedFormulaInput = this" placeholder="輸出文字建議 (例: 1g Q8H)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs focus:border-green-500 focus:bg-green-50 shadow-inner">
+                    <input type="text" value="${rule.result}" onchange="updateMatrixRule('${rule.id}', 'result', this.value)" onfocus="window.lastFocusedFormulaInput = this" onclick="window.lastFocusedFormulaInput = this" onkeyup="window.lastFocusedFormulaInput = this" placeholder="輸出建議 (例: 1g Q8H)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs focus:border-green-500 focus:bg-green-50 shadow-inner">
                 </div>
             </div>
             <button type="button" onclick="removeMatrixRule('${rule.id}')" class="text-red-400 hover:text-red-600 mt-3 px-1"><i class="fa-solid fa-trash-can"></i></button>
@@ -86,7 +68,6 @@ window.renderMatrixRulesUI = function() {
     `).join('');
 };
 
-// 【核心 3】導航與資料載入
 window.goToAddFormula = function(drugId = '') {
     resetFormulaForm();
     document.getElementById('formula-editor-title').innerText = "新增計算公式";
@@ -120,15 +101,11 @@ window.goToFormulaEdit = function(drugId, formulaId) {
     document.getElementById('formula-daily-max').value = f.daily_max || '';
     document.getElementById('formula-daily-unit').value = f.daily_max_unit || '';
 
-    // 載入矩陣規則
     if (f.matrix_rules && f.matrix_rules.trim() !== '' && f.matrix_rules !== '[]') {
         try {
             window.matrixRules = JSON.parse(f.matrix_rules);
             document.querySelector('input[value="matrix"]').checked = true;
-        } catch(e) {
-            window.matrixRules = [];
-            document.querySelector('input[value="basic"]').checked = true;
-        }
+        } catch(e) { window.matrixRules = []; document.querySelector('input[value="basic"]').checked = true; }
     } else {
         window.matrixRules = [];
         document.querySelector('input[value="basic"]').checked = true;
@@ -136,7 +113,6 @@ window.goToFormulaEdit = function(drugId, formulaId) {
     
     window.toggleFormulaMode();
     window.renderMatrixRulesUI();
-    
     switchTab('formulas');
     scrollToTop();
 };
@@ -157,29 +133,22 @@ window.resetFormulaForm = function() {
     document.getElementById('formula-daily-max').value = '';
     document.getElementById('formula-daily-unit').value = '';
     
-    // 初始化為 Basic 模式
     document.querySelector('input[value="basic"]').checked = true;
     window.matrixRules = [];
     window.toggleFormulaMode();
     window.renderMatrixRulesUI();
-
-    // 【新增這行】確保每次進入表單時，參數基本檔已經載入完畢再畫出按鈕
     window.renderAdminParamPad();
 };
 
-// 【核心 4】綁定與儲存
 window.saveFormula = async function() {
     const drugId = document.getElementById('formula-drug-id-hidden').value;
     const formulaName = document.getElementById('admin-formula-name').value.trim();
     
-    if (!drugId || !formulaName) {
-        return alert("請務必【綁定藥品】並填寫【計算方法名稱】！");
-    }
+    if (!drugId || !formulaName) return alert("請務必【綁定藥品】並填寫【計算方法名稱】！");
 
     const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
     const matrixStr = (mode === 'matrix') ? JSON.stringify(window.matrixRules) : "";
 
-    // 按鈕特效
     const btn = document.getElementById('btn-save-formula');
     const originalHtml = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> 儲存中...`;
@@ -199,13 +168,12 @@ window.saveFormula = async function() {
         single_max_unit: document.getElementById('formula-single-unit').value.trim(),
         daily_max: document.getElementById('formula-daily-max').value,
         daily_max_unit: document.getElementById('formula-daily-unit').value.trim(),
-        matrix_rules: matrixStr // 將陣列轉為字串送給 GAS
+        matrix_rules: matrixStr
     };
     
     await sendPost(payload); 
     btn.innerHTML = originalHtml;
     btn.disabled = false;
-    
     window.returnToDashboard(drugId); 
 };
 
@@ -252,19 +220,10 @@ window.setupFormulaDrugDropdown = function() {
 window.renderAdminParamPad = function() {
     const pad = document.getElementById('admin-param-pad');
     if(!pad) return;
-    
-    // 渲染一般參數
     let html = STORE.parameters.map(p => `<button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{${p.param_code}}')">${p.param_name} <span class="text-gray-400 font-normal ml-0.5">{${p.param_code}}</span></button>`).join('');
-    
-    // 額外加上給矩陣引擎用的「醫師處方」隱藏參數按鈕
     html += `<button type="button" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{prescribed}')">處方劑量輸入值 <span class="text-gray-500 font-normal ml-0.5">{prescribed}</span></button>`;
-    
     pad.innerHTML = html;
-    
-    // 綁定運算子按鈕
-    document.querySelectorAll('.op-btn').forEach(btn => {
-        btn.onclick = function() { insertParamToFormula(' ' + this.innerText + ' '); };
-    });
+    document.querySelectorAll('.op-btn').forEach(btn => { btn.onclick = function() { insertParamToFormula(' ' + this.innerText + ' '); }; });
 };
 
 window.insertParamToFormula = function(text) {
@@ -274,4 +233,18 @@ window.insertParamToFormula = function(text) {
     input.value = input.value.substring(0, start) + text + input.value.substring(end);
     input.focus();
     input.setSelectionRange(start + text.length, start + text.length);
+};
+
+window.toggleFormulaMode = function() {
+    const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
+    const maxContainer = document.getElementById('absolute-max-container');
+    if (mode === 'matrix') {
+        document.getElementById('mode-basic-container').classList.add('hidden');
+        document.getElementById('mode-matrix-container').classList.remove('hidden');
+        maxContainer.classList.add('opacity-40', 'pointer-events-none');
+    } else {
+        document.getElementById('mode-basic-container').classList.remove('hidden');
+        document.getElementById('mode-matrix-container').classList.add('hidden');
+        maxContainer.classList.remove('opacity-40', 'pointer-events-none');
+    }
 };
