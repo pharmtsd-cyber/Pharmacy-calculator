@@ -96,12 +96,8 @@ window.goToFormulaEdit = function(drugId, formulaId) {
     document.getElementById('admin-remark').value = f.remark || '';
     document.getElementById('admin-formula-min').value = f.formula_min || '';
     document.getElementById('admin-formula-max').value = f.formula_max || '';
-    document.getElementById('formula-single-max').value = f.single_max || '';
-    document.getElementById('formula-single-unit').value = f.single_max_unit || '';
-    document.getElementById('formula-daily-max').value = f.daily_max || '';
-    document.getElementById('formula-daily-unit').value = f.daily_max_unit || '';
 
-    // 【修正核心】直接讀取矩陣資料，不再進行切換按鈕的邏輯
+    // 直接讀取矩陣資料
     if (f.matrix_rules && f.matrix_rules.trim() !== '' && f.matrix_rules !== '[]') {
         try {
             window.matrixRules = JSON.parse(f.matrix_rules);
@@ -127,19 +123,15 @@ window.resetFormulaForm = function() {
     document.getElementById('admin-result-unit').value = '';
     document.getElementById('admin-remark').value = '';
     
-    // 清除一般區間欄位
+    // 清除區間欄位
     document.getElementById('admin-formula-min').value = '';
     document.getElementById('admin-formula-max').value = '';
-    document.getElementById('formula-single-max').value = '';
-    document.getElementById('formula-single-unit').value = '';
-    document.getElementById('formula-daily-max').value = '';
-    document.getElementById('formula-daily-unit').value = '';
     
-    // 徹底清除矩陣規則陣列與 UI
+    // 徹底清除矩陣規則
     window.matrixRules = [];
     window.renderMatrixRulesUI();
     
-    // 重新載入參數按鈕 (包含 {prescribed})
+    // 重新載入參數按鈕面板
     window.renderAdminParamPad();
 };
 
@@ -148,13 +140,6 @@ window.saveFormula = async function() {
     const formulaName = document.getElementById('admin-formula-name').value.trim();
     
     if (!drugId || !formulaName) return alert("請務必【綁定藥品】並填寫【計算方法名稱】！");
-
-    // 直接獲取矩陣資料，不需要再判斷 Radio 是否被選中
-    const matrixStr = JSON.stringify(window.matrixRules);
-
-    const btn = document.getElementById('btn-save-formula');
-    btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> 儲存中...`;
-    btn.disabled = true;
 
     const payload = {
         action: 'saveFormula',
@@ -166,11 +151,8 @@ window.saveFormula = async function() {
         remark: document.getElementById('admin-remark').value.trim(),
         formula_min: document.getElementById('admin-formula-min').value.trim(),
         formula_max: document.getElementById('admin-formula-max').value.trim(),
-        single_max: document.getElementById('formula-single-max').value,
-        single_max_unit: document.getElementById('formula-single-unit').value.trim(),
-        daily_max: document.getElementById('formula-daily-max').value,
-        daily_max_unit: document.getElementById('formula-daily-unit').value.trim(),
-        matrix_rules: matrixStr // 直接將 JSON 存入
+        // 絕對上限欄位已移除，這裡不再傳送
+        matrix_rules: JSON.stringify(window.matrixRules)
     };
     
     await sendPost(payload); 
