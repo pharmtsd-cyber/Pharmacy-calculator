@@ -149,11 +149,10 @@ window.saveFormula = async function() {
     
     if (!drugId || !formulaName) return alert("請務必【綁定藥品】並填寫【計算方法名稱】！");
 
-    const mode = document.querySelector('input[name="formula-mode-switch"]:checked').value;
-    const matrixStr = (mode === 'matrix') ? JSON.stringify(window.matrixRules) : "";
+    // 直接獲取矩陣資料，不需要再判斷 Radio 是否被選中
+    const matrixStr = JSON.stringify(window.matrixRules);
 
     const btn = document.getElementById('btn-save-formula');
-    const originalHtml = btn.innerHTML;
     btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin mr-1"></i> 儲存中...`;
     btn.disabled = true;
 
@@ -171,12 +170,10 @@ window.saveFormula = async function() {
         single_max_unit: document.getElementById('formula-single-unit').value.trim(),
         daily_max: document.getElementById('formula-daily-max').value,
         daily_max_unit: document.getElementById('formula-daily-unit').value.trim(),
-        matrix_rules: matrixStr
+        matrix_rules: matrixStr // 直接將 JSON 存入
     };
     
     await sendPost(payload); 
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
     window.returnToDashboard(drugId); 
 };
 
