@@ -75,11 +75,11 @@ window.renderMatrixRulesUI = function() {
             <div class="flex-grow flex flex-col gap-1.5">
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold text-gray-500 w-10 text-right"><i class="fa-solid fa-code-branch"></i> IF</span>
-                    <input type="text" value="${rule.condition}" onchange="updateMatrixRule('${rule.id}', 'condition', this.value)" placeholder="判斷條件 (例: {CrCl} >= 50)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs font-mono focus:border-indigo-500 focus:bg-indigo-50 shadow-inner">
+                    <input type="text" value="${rule.condition}" onchange="updateMatrixRule('${rule.id}', 'condition', this.value)" onfocus="window.lastFocusedFormulaInput = this" onclick="window.lastFocusedFormulaInput = this" onkeyup="window.lastFocusedFormulaInput = this" placeholder="判斷條件 (例: {CrCl} >= 50)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs font-mono focus:border-indigo-500 focus:bg-indigo-50 shadow-inner">
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] font-bold text-green-600 w-10 text-right"><i class="fa-solid fa-arrow-right"></i> THEN</span>
-                    <input type="text" value="${rule.result}" onchange="updateMatrixRule('${rule.id}', 'result', this.value)" placeholder="輸出文字建議 (例: 1g Q8H)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs focus:border-green-500 focus:bg-green-50 shadow-inner">
+                    <input type="text" value="${rule.result}" onchange="updateMatrixRule('${rule.id}', 'result', this.value)" onfocus="window.lastFocusedFormulaInput = this" onclick="window.lastFocusedFormulaInput = this" onkeyup="window.lastFocusedFormulaInput = this" placeholder="輸出文字建議 (例: 1g Q8H)" class="flex-grow border border-gray-300 rounded p-1.5 text-xs focus:border-green-500 focus:bg-green-50 shadow-inner">
                 </div>
             </div>
             <button type="button" onclick="removeMatrixRule('${rule.id}')" class="text-red-400 hover:text-red-600 mt-3 px-1"><i class="fa-solid fa-trash-can"></i></button>
@@ -250,9 +250,16 @@ window.setupFormulaDrugDropdown = function() {
 window.renderAdminParamPad = function() {
     const pad = document.getElementById('admin-param-pad');
     if(!pad) return;
-    pad.innerHTML = STORE.parameters.map(p => `<button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{${p.param_code}}')">${p.param_name} <span class="text-gray-400 font-normal ml-0.5">{${p.param_code}}</span></button>`).join('');
     
-    // 綁定運算子按鈕 (給 Basic 模式用)
+    // 渲染一般參數
+    let html = STORE.parameters.map(p => `<button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{${p.param_code}}')">${p.param_name} <span class="text-gray-400 font-normal ml-0.5">{${p.param_code}}</span></button>`).join('');
+    
+    // 額外加上給矩陣引擎用的「醫師處方」隱藏參數按鈕
+    html += `<button type="button" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{prescribed}')">處方劑量輸入值 <span class="text-gray-500 font-normal ml-0.5">{prescribed}</span></button>`;
+    
+    pad.innerHTML = html;
+    
+    // 綁定運算子按鈕
     document.querySelectorAll('.op-btn').forEach(btn => {
         btn.onclick = function() { insertParamToFormula(' ' + this.innerText + ' '); };
     });
