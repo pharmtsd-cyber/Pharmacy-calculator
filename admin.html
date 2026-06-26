@@ -339,18 +339,42 @@
 
         <section id="params" class="tab-content">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">參數基本檔維護</h2>
-            <div class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-3xl">
-                <input type="hidden" id="param-mode" value="add">
-                <div class="grid grid-cols-3 gap-4 mb-3">
-                    <div><label class="block text-xs font-bold mb-1">代碼 (限英文，不可重複) *</label><input type="text" id="param-code" class="w-full border rounded p-2 text-sm disabled:bg-gray-100"></div>
-                    <div><label class="block text-xs font-bold mb-1">中文名稱 *</label><input type="text" id="param-name" class="w-full border rounded p-2 text-sm"></div>
-                    <div><label class="block text-xs font-bold mb-1">預設單位 *</label><input type="text" id="param-unit" class="w-full border rounded p-2 text-sm"></div>
+                <div class="bg-white p-5 rounded-lg shadow-sm border mb-6 max-w-3xl">
+                    <input type="hidden" id="param-mode" value="add">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <label class="block text-xs font-bold mb-1">代碼 (限英文，不可重複) *</label>
+                            <input type="text" id="param-code" class="w-full border rounded p-2 text-sm disabled:bg-gray-100">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1">中文名稱 *</label>
+                            <input type="text" id="param-name" class="w-full border rounded p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold mb-1">預設單位</label>
+                            <input type="text" id="param-unit" class="w-full border rounded p-2 text-sm" placeholder="如: mg，可空白">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 border-t pt-3 mt-2">
+                        <div>
+                            <label class="block text-xs font-bold mb-1 text-blue-700">參數呈現類型 *</label>
+                            <select id="param-type" class="w-full border rounded p-2 text-sm bg-white" onchange="window.toggleParamOptionsUI()">
+                                <option value="INPUT" selected>常規數字輸入框</option>
+                                <option value="SELECT">下拉選單型定值</option>
+                            </select>
+                        </div>
+                        <div id="param-options-container" class="hidden col-span-2">
+                            <label class="block text-xs font-bold mb-1 text-blue-700">下拉選項設定 (格式為：顯示文字:數值，多筆用井號 | 隔開) *</label>
+                            <input type="text" id="param-options" class="w-full border border-blue-300 bg-blue-50/50 rounded p-2 text-sm font-mono" placeholder="例如：男:1|女:0.85 或 正常:1|輕度:0.75">
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-4">
+                        <button id="btn-save-param" onclick="window.saveParameter()" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">儲存參數</button>
+                        <button id="btn-cancel-param" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button id="btn-save-param" class="bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold">新增參數</button>
-                    <button id="btn-cancel-param" class="hidden bg-gray-400 text-white px-4 py-2 rounded text-sm font-bold">取消編輯</button>
-                </div>
-            </div>
             <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
                 <div class="p-3 bg-gray-50 border-b flex items-center justify-between"><span class="font-bold text-sm text-gray-700">參數清單</span><input type="text" id="filter-params" placeholder="模糊搜尋..." class="border rounded p-1.5 text-sm w-64"></div>
                 <table class="w-full data-table text-sm"><thead><tr><th>代碼</th><th>名稱</th><th>預設單位</th><th>操作</th></tr></thead><tbody id="list-params"></tbody></table>
