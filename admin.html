@@ -255,10 +255,12 @@
 
                         <div class="flex justify-end gap-2 mt-2 pt-2 border-t border-gray-200">
                             <button onclick="window.returnToDashboard()" type="button" class="bg-gray-400 text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-gray-500 transition"><i class="fa-solid fa-arrow-turn-up mr-1"></i> 取消並返回總覽</button>
-                            <div id="formula-test-preview" class="mb-6 p-4 bg-gray-50 border border-gray-300 rounded shadow-inner">
-                                <div class="text-xs font-bold text-gray-500 mb-2">公式預覽 (Min/Max):</div>
-                                <div id="preview-result-container" class="text-sm font-bold text-[#1B365D]">--</div>
-                            </div>
+                                <div id="formula-test-preview" class="mb-6 p-4 bg-gray-50 border border-gray-300 rounded shadow-inner">
+                                    <div class="text-xs font-bold text-gray-500 mb-2">公式預覽 (僅顯示您輸入的文字)：</div>
+                                    <div id="preview-result-container" class="text-sm font-bold text-[#1B365D] break-words">
+                                        Min: -- <br> Max: --
+                                    </div>
+                                </div>
                             <button id="btn-save-formula" onclick="window.saveFormula()" type="button" class="bg-[#1B365D] text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-blue-900 transition"><i class="fa-solid fa-floppy-disk mr-1"></i> 儲存運算公式</button>
                         </div>
                     </div>
