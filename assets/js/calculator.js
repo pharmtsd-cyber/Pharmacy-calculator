@@ -398,8 +398,9 @@ function renderDynamicParameters(formula) {
     }
 }
 
-// ================== [最終整合版：前台計算引擎] ==================
-
+// =====================================================================
+// 最終整合版：前台計算引擎（支援將 Min/Max 答案轉換為矩陣變數）
+// =====================================================================
 window.executeCalculation = function() {
     if (!currentFormula) return;
     
@@ -407,6 +408,7 @@ window.executeCalculation = function() {
     let allFilled = true;
     let scopeVals = {};
 
+    // 收集畫面上使用者輸入的生理參數
     inputs.forEach(input => {
         const val = input.value;
         if (val === '') allFilled = false;
@@ -430,11 +432,18 @@ window.executeCalculation = function() {
         matrixSection.innerText = '';
     }
 
-    // --- 使用您定義在 CORE.js 的統一引擎 ---
+    // --- 1. 使用定義在 config.js 的統一引擎計算基礎區間 ---
     let calculatedMin = window.sharedCalc(currentFormula.formula_min, scopeVals);
     let calculatedMax = window.sharedCalc(currentFormula.formula_max, scopeVals);
 
-    // --- 1. 顯示基礎結果 ---
+    // ==========================================
+    // 【核心修改】將算出的答案動態註冊為全新變數
+    // ==========================================
+    // 如此一來，動態條件判定矩陣內部就能直接識別並使用 {min} 與 {max}
+    scopeVals['min'] = calculatedMin !== null ? calculatedMin : 0;
+    scopeVals['max'] = calculatedMax !== null ? calculatedMax : 0;
+
+    // --- 2. 顯示基礎結果 ---
     if (baseSection && resultEl) {
         if (calculatedMin !== null || calculatedMax !== null) {
             resultEl.innerText = (calculatedMin !== null ? calculatedMin.toFixed(2) : '--') + 
@@ -446,15 +455,15 @@ window.executeCalculation = function() {
         }
     }
 
-    // --- 2. 執行進階動態矩陣判斷 (保留您原本的 [[ ]] 解析邏輯) ---
+    // --- 3. 執行進階動態矩陣判斷（此時 scopeVals 已內含 {min} 與 {max}） ---
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResults = []; 
         
         for (let rule of currentFormula.parsedMatrixRules) {
-            // 使用 sharedCalc 來判定 IF 條件是否成立
+            // 使用 sharedCalc 來判定 IF 條件是否成立（例如條件寫：{min} >= 50）
             if (window.sharedCalc(rule.condition, scopeVals)) {
                 
-                // 解析 THEN 結果中可能包含的 [[ ]] 運算式
+                // 解析 THEN 結果中可能包含的 [[ ]] 運算式（例如結果寫：建議給予 [[ {min} * 0.8 ]] mg）
                 let evalOutput = rule.result.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
                     let val = window.sharedCalc(expr, scopeVals);
                     return val !== null ? Math.round(val * 100) / 100 : expr;
@@ -470,13 +479,12 @@ window.executeCalculation = function() {
         if (matrixTextEl) {
             matrixTextEl.innerText = finalResult;
             if (matrixSection) {
-                matrixSection.appendChild(matrixTextEl);
+                // 確保容器內有對應的文字節點並顯現
                 matrixSection.classList.remove('hidden');
             }
         }
     }
 }
-// =====================================================================
 
 function resetResult() {
     // 重置建議區間顯示
