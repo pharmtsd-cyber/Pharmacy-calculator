@@ -439,6 +439,12 @@ function executeCalculation() {
     calculatedMin = evalFormula(currentFormula.formula_min);
     calculatedMax = evalFormula(currentFormula.formula_max);
     
+    // ==========================================
+    // 【新增】將基礎公式的計算結果，變成虛擬變數供矩陣使用
+    // ==========================================
+    scopeVals['min'] = calculatedMin !== null ? calculatedMin : 0;
+    scopeVals['max'] = calculatedMax !== null ? calculatedMax : 0;
+    
     if (calculatedMin !== null || calculatedMax !== null) {
         if (calculatedMin !== null && calculatedMax !== null) resultEl.innerText = `${calculatedMin} ~ ${calculatedMax}`;
         else resultEl.innerText = `${calculatedMin !== null ? calculatedMin : calculatedMax}`;
@@ -447,7 +453,9 @@ function executeCalculation() {
         baseSection.classList.add('hidden');
     }
 
-// 3. 執行進階動態矩陣判斷
+// 2. 執行進階動態矩陣判斷 (這邊的程式碼完全不用動)
+    // 因為 scopeVals 裡面已經有 'min' 和 'max' 了，
+    // 所以底下的 replace('{min}') 會自動把它替換成算出來的數字！
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResult = "⚠️ 數值超出所有設定的安全條件範圍";
         
