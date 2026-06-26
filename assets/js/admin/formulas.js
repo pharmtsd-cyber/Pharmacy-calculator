@@ -190,3 +190,86 @@ window.insertParamToFormula = function(text) {
     input.focus();
     input.setSelectionRange(start + text.length, start + text.length);
 };
+
+// ==========================================
+// 公式範本載入功能 (Copy Template Feature)
+// ==========================================
+
+window.openTemplateModal = function() {
+    document.getElementById('modal-template').classList.remove('hidden');
+    document.getElementById('input-template-search').value = '';
+    window.renderTemplateList('');
+};
+
+window.renderTemplateList = function(keyword) {
+    const list = document.getElementById('list-template-formulas');
+    const kw = keyword.toLowerCase().trim();
+    
+    // 篩選出符合關鍵字的公式
+    const filtered = STORE.formulas.filter(f => {
+        if (!kw) return true;
+        const searchStr = `${f.formula_name} ${f.drug_id}`.toLowerCase();
+        return searchStr.includes(kw);
+    });
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<tr><td class="text-center py-4 text-gray-400">找不到相符的公式</td></tr>`;
+        return;
+    }
+
+    // 渲染清單，並找出對應的藥品名稱讓您好辨識
+    list.innerHTML = filtered.map(f => {
+        const d = STORE.drugs.find(x => String(x.drug_id) === String(f.drug_id));
+        const drugDisplay = d ? `<span class="text-orange-600">${d.drug_code||''}</span> ${d.generic_name||''}` : `<span class="text-gray-400">未知藥品 ID: ${f.drug_id}</span>`;
+        
+        return `<tr class="hover:bg-orange-50 cursor-pointer transition border-b border-gray-100" onclick="window.applyTemplate('${f.formula_id}')">
+            <td class="p-3">
+                <div class="font-bold text-blue-900 text-sm mb-1"><i class="fa-solid fa-calculator text-gray-400 mr-1"></i> ${f.formula_name}</div>
+                <div class="text-[11px] text-gray-500 font-bold">來源: ${drugDisplay}</div>
+            </td>
+            <td class="p-3 text-right w-24 align-middle">
+                <span class="text-xs bg-orange-500 hover:bg-orange-600 text-white shadow-sm px-3 py-1.5 rounded font-bold">套用此公式</span>
+            </td>
+        </tr>`;
+    }).join('');
+};
+
+// 綁定搜尋框事件
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('input-template-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', window.debounce((e) => window.renderTemplateList(e.target.value), 300));
+    }
+});
+
+// 核心：將選擇的公式資料灌入目前的編輯表單
+window.applyTemplate = function(formulaId) {
+    const f = STORE.formulas.find(x => x.formula_id === formulaId);
+    if (!f) return;
+    
+    if (!confirm(`確定要載入「${f.formula_name}」？\n注意：這將會覆蓋您目前編輯區的內容！`)) return;
+
+    // 將資料寫入目前的表單欄位 (不修改 drug-id，保持綁定在當前藥品)
+    document.getElementById('admin-formula-name').value = f.formula_name + " (複製)";
+    document.getElementById('admin-result-unit').value = f.result_unit || '';
+    document.getElementById('admin-remark').value = f.remark || '';
+    document.getElementById('admin-formula-min').value = f.formula_min || '';
+    document.getElementById('admin-formula-max').value = f.formula_max || '';
+
+    // 解析矩陣規則
+    if (f.matrix_rules && f.matrix_rules.trim() !== '' && f.matrix_rules !== '[]') {
+        try { window.matrixRules = JSON.parse(f.matrix_rules); } catch(e) { window.matrixRules = []; }
+    } else {
+        window.matrixRules = [];
+    }
+    
+    // 【關鍵防護】重新生成矩陣規則的 ruleId，避免未來在拖拉排序或修改時產生 ID 衝突
+    window.matrixRules = window.matrixRules.map(r => ({
+        ...r,
+        id: 'rule_' + Date.now() + Math.floor(Math.random() * 1000)
+    }));
+
+    // 重繪矩陣 UI 並關閉彈窗
+    window.renderMatrixRulesUI();
+    document.getElementById('modal-template').classList.add('hidden');
+};
