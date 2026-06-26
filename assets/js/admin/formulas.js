@@ -291,61 +291,59 @@ window.applyTemplate = function(formulaId) {
 
 // --- [公式編輯即時預覽功能] ---
 
-// 1. 偵測公式變更，重新生成參數輸入框
-window.initFormulaPreview = function() {
-    const minRaw = document.getElementById('admin-formula-min').value;
-    const maxRaw = document.getElementById('admin-formula-max').value;
-    const container = document.getElementById('test-params-container');
-    if (!container) return;
-    
-    // 找出所有 {參數}
-    const needed = new Set([...minRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
-                    .concat([...maxRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
-
-    container.innerHTML = '';
-    needed.forEach(code => {
-        const div = document.createElement('div');
-        div.className = "flex flex-col";
-        div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase">${code}</label>
-                         <input type="number" class="w-20 border border-gray-300 rounded p-1 text-xs" data-param="${code}" placeholder="數值">`;
-        div.querySelector('input').addEventListener('input', window.calculatePreview);
-        container.appendChild(div);
-    });
-    window.calculatePreview(); 
-};
-
-// 2. 執行數值計算
-window.calculatePreview = function() {
-    const minRaw = document.getElementById('admin-formula-min').value;
-    const maxRaw = document.getElementById('admin-formula-max').value;
-    const inputs = document.querySelectorAll('#test-params-container input');
-    const displayEl = document.getElementById('preview-result-value');
-    if (!displayEl) return;
-    
-    let scope = {};
-    inputs.forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
-
-    const calc = (str) => {
-        if (!str || str.trim() === '') return '--';
-        try {
-            // 替換參數並轉乘號
-            let s = str.replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] ?? 0).replace(/x/gi, '*');
-            return new Function('return ' + s)();
-        } catch(e) { return '公式錯誤'; }
-    };
-
-    const vMin = calc(minRaw);
-    const vMax = calc(maxRaw);
-    
-    const display = (val) => (typeof val === 'number') ? val.toFixed(2) : val;
-    displayEl.innerText = `Min: ${display(vMin)} | Max: ${display(vMax)}`;
-};
-
-// 3. 綁定事件 (加入檢查避免對 null 綁定)
-document.addEventListener('DOMContentLoaded', () => {
+// 初始化綁定與變數偵測
+function setupFormulaPreview() {
     const minEl = document.getElementById('admin-formula-min');
     const maxEl = document.getElementById('admin-formula-max');
     
-    if(minEl) minEl.addEventListener('input', window.initFormulaPreview);
-    if(maxEl) maxEl.addEventListener('input', window.initFormulaPreview);
-});
+    if (!minEl || !maxEl) return;
+
+    // 定義運算與 UI 更新邏輯
+    const runPreview = () => {
+        const minRaw = minEl.value;
+        const maxRaw = maxEl.value;
+        const container = document.getElementById('test-params-container');
+        const displayEl = document.getElementById('preview-result-value');
+        if (!container || !displayEl) return;
+
+        // 1. 動態產生輸入框
+        const params = new Set([...minRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
+                        .concat([...maxRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
+        
+        // 只有當參數變更時才重繪輸入框，避免游標跳動
+        if (container.dataset.rendered !== JSON.stringify([...params])) {
+            container.innerHTML = '';
+            params.forEach(code => {
+                const div = document.createElement('div');
+                div.innerHTML = `<label class="text-[9px] font-bold text-gray-500 uppercase">${code}</label>
+                                 <input type="number" class="w-20 border border-gray-300 rounded p-1 text-xs" data-param="${code}" placeholder="數值">`;
+                div.querySelector('input').addEventListener('input', runPreview);
+                container.appendChild(div);
+            });
+            container.dataset.rendered = JSON.stringify([...params]);
+        }
+
+        // 2. 進行計算
+        const inputs = container.querySelectorAll('input');
+        let scope = {};
+        inputs.forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
+
+        const calc = (str) => {
+            try {
+                let s = str.replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] ?? 0).replace(/x/gi, '*');
+                return new Function('return ' + s)();
+            } catch(e) { return '--'; }
+        };
+
+        const vMin = calc(minRaw);
+        const vMax = calc(maxRaw);
+        displayEl.innerText = `Min: ${typeof vMin === 'number' ? vMin.toFixed(2) : vMin} | Max: ${typeof vMax === 'number' ? vMax.toFixed(2) : vMax}`;
+    };
+
+    // 綁定主事件
+    minEl.addEventListener('input', runPreview);
+    maxEl.addEventListener('input', runPreview);
+}
+
+// 頁面載入後初始化
+document.addEventListener('DOMContentLoaded', setupFormulaPreview);
