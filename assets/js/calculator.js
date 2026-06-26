@@ -322,19 +322,18 @@ function renderDynamicParameters(formula) {
         alertBox.classList.add('hidden');
     }
 
-    // 5. 【核心】自動萃取所有參數並產生輸入框
+// 5. 【動態解析配置】萃取參數並決定生成 input 還是 select
     const paramContainer = document.getElementById('dynamic-parameters');
     paramContainer.innerHTML = '';
     const requiredCodes = new Set(); 
     const paramRegex = /{([a-zA-Z0-9_]+)}/g; 
     let match;
 
-    // 從區間公式、矩陣條件與結果中掃描所有 {參數}
     const combinedText = (formula.formula_min || '') + (formula.formula_max || '') + 
                          matrixRules.map(r => r.condition + r.result).join('');
     
     while ((match = paramRegex.exec(combinedText)) !== null) {
-        if (match[1].toLowerCase() !== 'prescribed') { // 排除系統保留參數
+        if (match[1].toLowerCase() !== 'prescribed') {
             requiredCodes.add(match[1]);
         }
     }
@@ -344,21 +343,53 @@ function renderDynamicParameters(formula) {
         executeCalculation(); 
     } else {
         document.getElementById('dynamic-parameters-container').classList.remove('hidden');
+        
         requiredCodes.forEach(code => {
+            // 從後台載入的 STORE 尋找參數設定
             const paramDef = STORE.parameters.find(p => p.param_code === code);
             const paramName = paramDef ? paramDef.param_name : code; 
             const paramUnit = paramDef ? paramDef.default_unit : '';
+            const paramType = paramDef ? paramDef.param_type : 'INPUT'; // 預設為常規輸入框
+            const paramOptionsStr = paramDef ? paramDef.param_options : '';
+
             const div = document.createElement('div');
             div.className = 'flex flex-col gap-1';
-            div.innerHTML = `
-                <label class="text-xs font-bold text-gray-700">${paramName} ${paramUnit ? `<span class="text-gray-400">(${paramUnit})</span>` : ''}</label>
-                <input type="number" data-code="${code}" step="any" min="0" placeholder="輸入數值..." class="param-input border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] shadow-inner bg-white">
-            `;
+
+            // 狀況 A：後台設定此變數為「下拉選單型定值」
+            if (paramType === 'SELECT' && paramOptionsStr) {
+                let optionsHtml = `<option value="">請選擇...</option>`;
+                
+                // 解析 "男:1|女:0.85" 格式
+                const optionPairs = paramOptionsStr.split('|');
+                optionPairs.forEach(pair => {
+                    const [text, val] = pair.split(':');
+                    if (text && val !== undefined) {
+                        optionsHtml += `<option value="${val}">${text}</option>`;
+                    }
+                });
+
+                div.innerHTML = `
+                    <label class="text-xs font-bold text-gray-700">${paramName}</label>
+                    <select data-code="${code}" class="param-input border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] shadow-inner bg-white">
+                        ${optionsHtml}
+                    </select>
+                `;
+            } 
+            // 狀況 B：常規數字變數輸入框
+            else {
+                div.innerHTML = `
+                    <label class="text-xs font-bold text-gray-700">${paramName} ${paramUnit ? `<span class="text-gray-400">(${paramUnit})</span>` : ''}</label>
+                    <input type="number" data-code="${code}" step="any" min="0" placeholder="輸入數值..." class="param-input border border-gray-300 rounded p-2 text-sm focus:outline-none focus:border-[#1B365D] shadow-inner bg-white">
+                `;
+            }
             paramContainer.appendChild(div);
         });
-        document.querySelectorAll('.param-input').forEach(input => 
-            input.addEventListener('input', window.debounce(executeCalculation, 100))
-        );
+
+        // 監聽所有動態元件 (不論 select 或 input)，值改變就觸發 executeCalculation
+        document.querySelectorAll('.param-input').forEach(input => {
+            input.addEventListener('change', window.debounce(executeCalculation, 100));
+            input.addEventListener('input', window.debounce(executeCalculation, 100));
+        });
         executeCalculation();
     }
 }
