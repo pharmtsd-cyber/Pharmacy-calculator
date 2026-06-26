@@ -1,3 +1,14 @@
+window.toggleParamOptionsUI = function() {
+    const type = document.getElementById('param-type').value;
+    const container = document.getElementById('param-options-container');
+    if (type === 'SELECT') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        document.getElementById('param-options').value = ''; 
+    }
+};
+
 window.renderSystemLists = function() {
     const fStaff = document.getElementById('filter-staff') ? document.getElementById('filter-staff').value.toLowerCase() : '';
     const fParams = document.getElementById('filter-params') ? document.getElementById('filter-params').value.toLowerCase() : '';
@@ -64,17 +75,46 @@ document.addEventListener('DOMContentLoaded', () => {
         await sendPost({ action: 'saveStaff', emp_id: id, name: name, role: document.getElementById('staff-role').value, status: document.getElementById('staff-status').value });
         document.getElementById('staff-id').value = ''; document.getElementById('staff-name').value = '';
     });
-    bind('btn-save-param', async () => {
-        const mode = document.getElementById('param-mode').value, code = document.getElementById('param-code').value.trim(), name = document.getElementById('param-name').value.trim();
-        if(!code || !name) return alert("必填"); if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
+bind('btn-save-param', async () => {
+        const mode = document.getElementById('param-mode').value;
+        const code = document.getElementById('param-code').value.trim();
+        const name = document.getElementById('param-name').value.trim();
+        const type = document.getElementById('param-type').value;
+        const options = document.getElementById('param-options').value.trim();
+
+        if(!code || !name) return alert("必填"); 
+        if(!/^[a-zA-Z0-9_]+$/.test(code)) return alert("代碼限英文與底線");
         if(mode === 'add' && STORE.parameters.some(p => p.param_code === code)) return alert("代碼已存在");
-        await sendPost({ action: 'saveParameter', mode: mode, param_code: code, param_name: name, default_unit: document.getElementById('param-unit').value }); 
+        if(type === 'SELECT' && !options) return alert("請輸入下拉選單的選項設定內容！");
+
+        await sendPost({ 
+            action: 'saveParameter', 
+            mode: mode, 
+            param_code: code, 
+            param_name: name, 
+            default_unit: document.getElementById('param-unit').value,
+            param_type: type,
+            param_options: options
+        }); 
         document.getElementById('btn-cancel-param').click();
     });
+
     bind('btn-cancel-param', () => {
-        document.getElementById('param-mode').value = 'add'; document.getElementById('param-code').value = ''; document.getElementById('param-code').disabled = false;
-        document.getElementById('param-name').value = ''; document.getElementById('param-unit').value = '';
-        document.getElementById('btn-save-param').innerText = "新增參數"; document.getElementById('btn-cancel-param').classList.add('hidden');
+        document.getElementById('param-mode').value = 'add'; 
+        document.getElementById('param-code').value = ''; 
+        document.getElementById('param-code').disabled = false;
+        document.getElementById('param-name').value = ''; 
+        document.getElementById('param-unit').value = '';
+        
+        // 恢復預設選項
+        if (document.getElementById('param-type')) {
+            document.getElementById('param-type').value = 'INPUT';
+            document.getElementById('param-options').value = '';
+            window.toggleParamOptionsUI();
+        }
+
+        document.getElementById('btn-save-param').innerText = "新增參數"; 
+        document.getElementById('btn-cancel-param').classList.add('hidden');
     });
     bind('btn-save-anno', async () => {
         const payload = { action: 'saveAnnouncement', mode: document.getElementById('anno-mode').value, announce_id: document.getElementById('anno-id').value, version: document.getElementById('anno-version').value, date: document.getElementById('anno-date').value, is_pinned: document.getElementById('anno-pinned').value, content: document.getElementById('anno-content').value };
@@ -111,9 +151,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.editParameter = function(code) {
     const p = STORE.parameters.find(x => x.param_code === code); if(!p) return;
-    document.getElementById('param-mode').value = 'edit'; document.getElementById('param-code').value = p.param_code; document.getElementById('param-code').disabled = true;
-    document.getElementById('param-name').value = p.param_name; document.getElementById('param-unit').value = p.default_unit;
-    document.getElementById('btn-save-param').innerText = "更新參數"; document.getElementById('btn-cancel-param').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    document.getElementById('param-mode').value = 'edit'; 
+    document.getElementById('param-code').value = p.param_code; 
+    document.getElementById('param-code').disabled = true;
+    document.getElementById('param-name').value = p.param_name; 
+    document.getElementById('param-unit').value = p.default_unit || '';
+    
+    // 載入進階選單設定
+    if (document.getElementById('param-type')) {
+        document.getElementById('param-type').value = p.param_type || 'INPUT';
+        document.getElementById('param-options').value = p.param_options || '';
+        window.toggleParamOptionsUI();
+    }
+
+    document.getElementById('btn-save-param').innerText = "更新參數"; 
+    document.getElementById('btn-cancel-param').classList.remove('hidden'); 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 window.editCategory = function(id) {
     const c = STORE.categories.find(x => x.cat_id === id); if(!c) return;
