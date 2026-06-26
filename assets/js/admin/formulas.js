@@ -288,3 +288,20 @@ window.applyTemplate = function(formulaId) {
     window.renderMatrixRulesUI();
     document.getElementById('modal-template').classList.add('hidden');
 };
+
+window.updatePreview = function() {
+    const minVal = document.getElementById('admin-formula-min').value;
+    const maxVal = document.getElementById('admin-formula-max').value;
+    const container = document.getElementById('preview-result-container');
+    if (container) {
+        container.innerHTML = `Min: <span class="text-blue-600">${minVal || '--'}</span><br>Max: <span class="text-blue-600">${maxVal || '--'}</span>`;
+    }
+};
+
+// 確保綁定
+document.addEventListener('DOMContentLoaded', () => {
+    const minInput = document.getElementById('admin-formula-min');
+    const maxInput = document.getElementById('admin-formula-max');
+    if(minInput) minInput.addEventListener('input', window.updatePreview);
+    if(maxInput) maxInput.addEventListener('input', window.updatePreview);
+});
