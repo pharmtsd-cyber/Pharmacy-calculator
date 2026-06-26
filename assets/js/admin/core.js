@@ -4,26 +4,6 @@ var CONTEXT_DRUG = null;
 var stateTags = { relatedDrugs: [] };
 Object.assign(STORE, { staff: [], categories: [], announcements: [], forms: [], feedbacks: [] });
 
-window.sharedCalc = function(str, scope) {
-    if (!str || String(str).trim() === '') return null;
-    try {
-        // 正規化邏輯統一在此：x轉*，<>轉!=，所有括號轉小括號
-        let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=').replace(/\[/g, '(').replace(/\]/g, ')');
-        
-        // 變數替換
-        for (let code in scope) {
-            s = s.replace(new RegExp(`\\{${code}\\}`, 'gi'), scope[code] || 0);
-        }
-        s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
-        
-        // 執行運算
-        return new Function('return ' + s)();
-    } catch(e) {
-        console.error("運算失敗:", str, e);
-        return null;
-    }
-};
-
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-login').onclick = handleLogin;
     document.getElementById('btn-open-pw').onclick = () => document.getElementById('pw-modal').classList.remove('hidden');
