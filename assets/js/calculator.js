@@ -4,21 +4,6 @@ let calculatedMin = null;
 let calculatedMax = null;
 let currentDomain = 'home'; 
 
-window.sharedCalc = function(str, scope) {
-    if (!str || String(str).trim() === '') return null;
-    try {
-        let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=');
-        for (let code in scope) {
-            s = s.replace(new RegExp(`\\{${code}\\}`, 'gi'), scope[code] || 0);
-        }
-        s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
-        return new Function('return ' + s)();
-    } catch(e) {
-        console.error("運算失敗:", str, e);
-        return null;
-    }
-};
-
 window.debounce = function(func, delay) {
     let timer;
     return function(...args) {
