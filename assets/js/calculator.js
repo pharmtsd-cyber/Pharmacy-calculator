@@ -435,20 +435,19 @@ function executeCalculation() {
 
     // --- 超強健數學解析引擎 ---
     const evalFormula = (f) => {
-        // 【關鍵修正】強制將 f 轉為 String，避免純數字時引發 .trim() 崩潰錯誤
-        if (f === null || f === undefined || String(f).trim() === '') return null;
+        if (!f || String(f).trim() === '') return null;
         let str = String(f);
         
+        // 簡單替換變數
         for(let code in scopeVals) {
             str = str.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
         }
         
-        str = str.replace(/{[a-zA-Z0-9_]+}/g, '0'); // 防呆：未被替換的變數視為0
-        
         try { 
-            return Math.round(math.evaluate(str) * 100) / 100; 
+            // 移除 math.evaluate，改用最穩定的 new Function 運算，避免複雜矩陣解析錯誤
+            return new Function('return ' + str)();
         } catch(e) { 
-            console.warn("公式運算失敗:", str, e); 
+            console.warn("簡易計算失敗:", str); 
             return null; 
         }
     };
