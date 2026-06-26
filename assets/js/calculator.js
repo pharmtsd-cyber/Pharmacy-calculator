@@ -421,18 +421,17 @@ function renderDynamicParameters(formula) {
 
 // ================== [最終整合版：前台計算引擎] ==================
 
-function executeCalculation() {
+window.executeCalculation = function() {
     if (!currentFormula) return;
     
     const inputs = document.querySelectorAll('.param-input'); 
     let allFilled = true;
     let scopeVals = {};
 
-    // 收集使用者輸入的值
     inputs.forEach(input => {
         const val = input.value;
         if (val === '') allFilled = false;
-        scopeVals[input.getAttribute('data-code')] = val;
+        scopeVals[input.getAttribute('data-code')] = parseFloat(val) || 0;
     });
 
     const resultEl = document.getElementById('result-value');
@@ -440,110 +439,72 @@ function executeCalculation() {
     const baseSection = document.getElementById('base-range-section');
     const matrixSection = document.getElementById('matrix-result-section');
     
-    // 如果參數沒填完，清空並隱藏區塊
     if (!allFilled && inputs.length > 0) { 
         if(resultEl) resultEl.innerText = "--";
-        if(resultUnitEl) resultUnitEl.innerText = "";
         if(baseSection) baseSection.classList.add('hidden');
         if(matrixSection) matrixSection.classList.add('hidden');
         return; 
     }
 
-    if(matrixSection) {
-        matrixSection.classList.add('hidden'); 
-        matrixSection.innerText = '';
-    }
-
-    // --- 超強健數學解析引擎 ---
-    const evalFormula = (f) => {
-        if (!f || String(f).trim() === '') return null;
-        let str = String(f);
-        
-        // 簡單替換變數
-        for(let code in scopeVals) {
-            str = str.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
-        }
-        
-        try { 
-            // 移除 math.evaluate，改用最穩定的 new Function 運算，避免複雜矩陣解析錯誤
-            return new Function('return ' + str)();
-        } catch(e) { 
-            console.warn("簡易計算失敗:", str); 
-            return null; 
-        }
+    // --- 統一的運算引擎 (不再使用 math.evaluate) ---
+    const smartEval = (str) => {
+        if (!str || String(str).trim() === '') return null;
+        try {
+            let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=');
+            for(let code in scopeVals) {
+                s = s.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
+            }
+            s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
+            return new Function('return ' + s)();
+        } catch(e) { return null; }
     };
 
     // 1. 執行基礎區間計算
-    let calculatedMin = evalFormula(currentFormula.formula_min);
-    scopeVals['min'] = calculatedMin !== null ? calculatedMin : 0;
+    let calculatedMin = smartEval(currentFormula.formula_min);
+    let calculatedMax = smartEval(currentFormula.formula_max);
 
-    let calculatedMax = evalFormula(currentFormula.formula_max);
-    scopeVals['max'] = calculatedMax !== null ? calculatedMax : 0;
-
-    // --- 顯示基礎結果 (完美支援單一數值或區間) ---
     if (baseSection && resultEl) {
-        // 只要 Min 或 Max 任何一個有值，就顯示該區塊
         if (calculatedMin !== null || calculatedMax !== null) {
-            
-            // 如果兩個都有算出來，顯示區間 (X ~ Y)
-            if (calculatedMin !== null && calculatedMax !== null) {
-                resultEl.innerText = `${calculatedMin} ~ ${calculatedMax}`;
-            } 
-            // 如果只有填 Min 或只有填 Max，就直接顯示單一數字
-            else {
-                resultEl.innerText = `${calculatedMin !== null ? calculatedMin : calculatedMax}`;
-            }
-            
+            resultEl.innerText = (calculatedMin !== null ? calculatedMin.toFixed(2) : '--') + 
+                                 (calculatedMax !== null ? ' ~ ' + calculatedMax.toFixed(2) : '');
             if(resultUnitEl) resultUnitEl.innerText = currentFormula.result_unit || '';
             baseSection.classList.remove('hidden');
         } else {
-            // 只有當 Min 跟 Max 雙方都完全留空時，才隱藏基礎區塊
             baseSection.classList.add('hidden');
         }
     }
 
-    // --- 2. 執行進階動態矩陣判斷 (支援多重命中) ---
+    // 2. 執行動態矩陣判斷 (用原生邏輯替換 math.evaluate)
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResults = []; 
-        
         for (let rule of currentFormula.parsedMatrixRules) {
-            let evalCondition = rule.condition;
-            
-            for(let code in scopeVals) {
-                evalCondition = evalCondition.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
-            }
-            evalCondition = evalCondition.replace(/{[a-zA-Z0-9_]+}/g, '0');
-            
-            let sanitizedCondition = evalCondition.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
-
             try {
-                if (sanitizedCondition.trim() === '' || math.evaluate(sanitizedCondition)) {
+                // 將條件正規化：轉乘號、轉比較符
+                let cond = rule.condition.replace(/x/gi, '*').replace(/<>/g, '!=');
+                for(let code in scopeVals) {
+                    cond = cond.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
+                }
+                
+                // 【核心修正】這裡直接用 new Function 執行條件，完全拋棄 math.js
+                if (new Function('return ' + cond)()) {
                     let evalOutput = rule.result;
                     for(let code in scopeVals) {
-                        evalOutput = evalOutput.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
+                        evalOutput = evalOutput.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
                     }
-                    evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
-                        expr = expr.replace(/{[a-zA-Z0-9_]+}/g, '0'); 
-                        try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
-                    });
-                    
                     matchedResults.push(evalOutput);
                 }
-            } catch(e) { console.warn("矩陣判定錯誤:", sanitizedCondition, e); }
+            } catch(e) { console.warn("矩陣判定跳過:", rule.condition); }
         }
         
-        let finalResult = matchedResults.length > 0 
-            ? matchedResults.join('\n\n------------------------\n\n') 
-            : "⚠️ 數值未命中任何設定的條件範圍";
-
         const matrixTextEl = document.getElementById('matrix-result-text');
-        if (matrixTextEl) {
-            matrixTextEl.innerText = finalResult;
-        } else if (matrixSection) {
-            matrixSection.innerText = finalResult;
-        }
+        const finalResult = matchedResults.length > 0 ? matchedResults.join('\n\n------------------------\n\n') : "⚠️ 數值未命中任何設定條件";
         
-        if (matrixSection) matrixSection.classList.remove('hidden');
+        if (matrixTextEl) matrixTextEl.innerText = finalResult;
+        if (matrixSection) {
+            matrixSection.innerText = ''; // 清空舊內容
+            matrixSection.appendChild(matrixTextEl || document.createTextNode(finalResult));
+            matrixSection.classList.remove('hidden');
+        }
     }
 }
 // =====================================================================
