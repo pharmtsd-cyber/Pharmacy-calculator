@@ -290,6 +290,7 @@ window.applyTemplate = function(formulaId) {
 };
 
 // --- [公式編輯即時預覽功能] ---
+// 請使用這一個版本，它直接呼叫您在 core.js 定義好的 window.sharedCalc
 window.setupFormulaPreview = function() {
     const minEl = document.getElementById('admin-formula-min');
     const maxEl = document.getElementById('admin-formula-max');
@@ -299,6 +300,7 @@ window.setupFormulaPreview = function() {
     if (!minEl || !maxEl || !container || !displayEl) return;
 
     const runPreview = () => {
+        // 1. 抓參數 (與原本邏輯一致)
         const params = new Set([...minEl.value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
                         .concat([...maxEl.value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
         
@@ -314,22 +316,15 @@ window.setupFormulaPreview = function() {
             container.dataset.rendered = JSON.stringify([...params]);
         }
 
+        // 2. 獲取當前輸入值
         let scope = {};
         container.querySelectorAll('input').forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
 
-        // 使用內建邏輯運算，不再依賴外部 window.sharedCalc，保證穩定
-        const smartEval = (str) => {
-            try {
-                let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=');
-                for (let code in scope) s = s.replace(new RegExp(`\\{${code}\\}`, 'gi'), scope[code] || 0);
-                s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
-                return new Function('return ' + s)();
-            } catch(e) { return null; }
-        };
-
-        const vMin = smartEval(minEl.value);
-        const vMax = smartEval(maxEl.value);
-        displayEl.innerText = `Min: ${typeof vMin === 'number' ? vMin.toFixed(2) : '--'} | Max: ${typeof vMax === 'number' ? vMax.toFixed(2) : '--'}`;
+        // 3. 直接呼叫 core.js 已經定義好的 window.sharedCalc
+        const vMin = window.sharedCalc(minEl.value, scope);
+        const vMax = window.sharedCalc(maxEl.value, scope);
+        
+        displayEl.innerText = `Min: ${vMin !== null ? vMin.toFixed(2) : '--'} | Max: ${vMax !== null ? vMax.toFixed(2) : '--'}`;
     };
 
     minEl.addEventListener('input', runPreview);
