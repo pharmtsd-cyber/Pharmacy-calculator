@@ -435,42 +435,49 @@ function executeCalculation() {
 
     // --- 超強健數學解析引擎 ---
     const evalFormula = (f) => {
-        if (!f || f.trim() === '') return null;
-        let str = f;
+        // 【關鍵修正】強制將 f 轉為 String，避免純數字時引發 .trim() 崩潰錯誤
+        if (f === null || f === undefined || String(f).trim() === '') return null;
+        let str = String(f);
         
-        // 1. 替換已知變數
         for(let code in scopeVals) {
             str = str.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
         }
         
-        // 2. 【強力防呆】如果還有沒被替換掉的變數 (例如打錯字)，強制轉成 0，避免引擎崩潰隱藏畫面
-        str = str.replace(/{[a-zA-Z0-9_]+}/g, '0');
+        str = str.replace(/{[a-zA-Z0-9_]+}/g, '0'); // 防呆：未被替換的變數視為0
         
         try { 
             return Math.round(math.evaluate(str) * 100) / 100; 
         } catch(e) { 
-            console.warn("公式運算失敗，請檢查語法:", f, "-> 解析後:", str, e); 
+            console.warn("公式運算失敗:", str, e); 
             return null; 
         }
     };
 
-    // --- 1. 執行基礎區間計算 (依序計算，讓 Max 可以吃到 Min) ---
+    // 1. 執行基礎區間計算
     let calculatedMin = evalFormula(currentFormula.formula_min);
     scopeVals['min'] = calculatedMin !== null ? calculatedMin : 0;
 
     let calculatedMax = evalFormula(currentFormula.formula_max);
     scopeVals['max'] = calculatedMax !== null ? calculatedMax : 0;
 
-    // 顯示基礎結果
+    // --- 顯示基礎結果 (完美支援單一數值或區間) ---
     if (baseSection && resultEl) {
+        // 只要 Min 或 Max 任何一個有值，就顯示該區塊
         if (calculatedMin !== null || calculatedMax !== null) {
-            if (calculatedMin !== null && calculatedMax !== null) resultEl.innerText = `${calculatedMin} ~ ${calculatedMax}`;
-            else resultEl.innerText = `${calculatedMin !== null ? calculatedMin : calculatedMax}`;
+            
+            // 如果兩個都有算出來，顯示區間 (X ~ Y)
+            if (calculatedMin !== null && calculatedMax !== null) {
+                resultEl.innerText = `${calculatedMin} ~ ${calculatedMax}`;
+            } 
+            // 如果只有填 Min 或只有填 Max，就直接顯示單一數字
+            else {
+                resultEl.innerText = `${calculatedMin !== null ? calculatedMin : calculatedMax}`;
+            }
             
             if(resultUnitEl) resultUnitEl.innerText = currentFormula.result_unit || '';
             baseSection.classList.remove('hidden');
         } else {
-            // 只有在後台真的把 min 跟 max 公式「完全留空」時，這裡才會隱藏
+            // 只有當 Min 跟 Max 雙方都完全留空時，才隱藏基礎區塊
             baseSection.classList.add('hidden');
         }
     }
@@ -485,7 +492,7 @@ function executeCalculation() {
             for(let code in scopeVals) {
                 evalCondition = evalCondition.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
             }
-            evalCondition = evalCondition.replace(/{[a-zA-Z0-9_]+}/g, '0'); // 防呆
+            evalCondition = evalCondition.replace(/{[a-zA-Z0-9_]+}/g, '0');
             
             let sanitizedCondition = evalCondition.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
 
@@ -496,7 +503,7 @@ function executeCalculation() {
                         evalOutput = evalOutput.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code] || 0);
                     }
                     evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
-                        expr = expr.replace(/{[a-zA-Z0-9_]+}/g, '0'); // 防呆
+                        expr = expr.replace(/{[a-zA-Z0-9_]+}/g, '0'); 
                         try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
                     });
                     
@@ -505,7 +512,6 @@ function executeCalculation() {
             } catch(e) { console.warn("矩陣判定錯誤:", sanitizedCondition, e); }
         }
         
-        // 組合多重結果
         let finalResult = matchedResults.length > 0 
             ? matchedResults.join('\n\n------------------------\n\n') 
             : "⚠️ 數值未命中任何設定的條件範圍";
@@ -520,7 +526,6 @@ function executeCalculation() {
         if (matrixSection) matrixSection.classList.remove('hidden');
     }
 }
-
 // =====================================================================
 
 function resetResult() {
