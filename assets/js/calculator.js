@@ -333,12 +333,16 @@ function renderDynamicParameters(formula) {
                          matrixRules.map(r => r.condition + r.result).join('');
     
     while ((match = paramRegex.exec(combinedText)) !== null) {
-        if (match[1].toLowerCase() !== 'prescribed') {
-            requiredCodes.add(match[1]);
+        const paramCode = match[1];
+        const codeLower = paramCode.toLowerCase();
+        
+        // 【關鍵修正】把不需要產生輸入框的「內部變數」通通排除
+        if (codeLower !== 'prescribed' && codeLower !== 'min' && codeLower !== 'max') {
+            requiredCodes.add(paramCode);
         }
     }
 
-    if (requiredCodes.size === 0) { 
+    if (requiredCodes.size === 0) {
         document.getElementById('dynamic-parameters-container').classList.add('hidden');
         executeCalculation(); 
     } else {
