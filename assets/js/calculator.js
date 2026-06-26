@@ -425,23 +425,16 @@ window.executeCalculation = function() {
         return; 
     }
 
-    // --- 統一的運算引擎 (不再使用 math.evaluate) ---
-    const smartEval = (str) => {
-        if (!str || String(str).trim() === '') return null;
-        try {
-            let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=');
-            for(let code in scopeVals) {
-                s = s.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
-            }
-            s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
-            return new Function('return ' + s)();
-        } catch(e) { return null; }
-    };
+    if(matrixSection) {
+        matrixSection.classList.add('hidden'); 
+        matrixSection.innerText = '';
+    }
 
-    // 1. 執行基礎區間計算
-    let calculatedMin = smartEval(currentFormula.formula_min);
-    let calculatedMax = smartEval(currentFormula.formula_max);
+    // --- 使用您定義在 CORE.js 的統一引擎 ---
+    let calculatedMin = window.sharedCalc(currentFormula.formula_min, scopeVals);
+    let calculatedMax = window.sharedCalc(currentFormula.formula_max, scopeVals);
 
+    // --- 1. 顯示基礎結果 ---
     if (baseSection && resultEl) {
         if (calculatedMin !== null || calculatedMax !== null) {
             resultEl.innerText = (calculatedMin !== null ? calculatedMin.toFixed(2) : '--') + 
@@ -453,36 +446,33 @@ window.executeCalculation = function() {
         }
     }
 
-    // 2. 執行動態矩陣判斷 (用原生邏輯替換 math.evaluate)
+    // --- 2. 執行進階動態矩陣判斷 (保留您原本的 [[ ]] 解析邏輯) ---
     if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
         let matchedResults = []; 
+        
         for (let rule of currentFormula.parsedMatrixRules) {
-            try {
-                // 將條件正規化：轉乘號、轉比較符
-                let cond = rule.condition.replace(/x/gi, '*').replace(/<>/g, '!=');
-                for(let code in scopeVals) {
-                    cond = cond.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
-                }
+            // 使用 sharedCalc 來判定 IF 條件是否成立
+            if (window.sharedCalc(rule.condition, scopeVals)) {
                 
-                // 【核心修正】這裡直接用 new Function 執行條件，完全拋棄 math.js
-                if (new Function('return ' + cond)()) {
-                    let evalOutput = rule.result;
-                    for(let code in scopeVals) {
-                        evalOutput = evalOutput.replace(new RegExp(`{${code}}`, 'gi'), scopeVals[code]);
-                    }
-                    matchedResults.push(evalOutput);
-                }
-            } catch(e) { console.warn("矩陣判定跳過:", rule.condition); }
+                // 解析 THEN 結果中可能包含的 [[ ]] 運算式
+                let evalOutput = rule.result.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
+                    let val = window.sharedCalc(expr, scopeVals);
+                    return val !== null ? Math.round(val * 100) / 100 : expr;
+                });
+                
+                matchedResults.push(evalOutput);
+            }
         }
         
-        const matrixTextEl = document.getElementById('matrix-result-text');
         const finalResult = matchedResults.length > 0 ? matchedResults.join('\n\n------------------------\n\n') : "⚠️ 數值未命中任何設定條件";
+        const matrixTextEl = document.getElementById('matrix-result-text');
         
-        if (matrixTextEl) matrixTextEl.innerText = finalResult;
-        if (matrixSection) {
-            matrixSection.innerText = ''; // 清空舊內容
-            matrixSection.appendChild(matrixTextEl || document.createTextNode(finalResult));
-            matrixSection.classList.remove('hidden');
+        if (matrixTextEl) {
+            matrixTextEl.innerText = finalResult;
+            if (matrixSection) {
+                matrixSection.appendChild(matrixTextEl);
+                matrixSection.classList.remove('hidden');
+            }
         }
     }
 }
