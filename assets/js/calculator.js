@@ -4,6 +4,27 @@ let calculatedMin = null;
 let calculatedMax = null;
 let currentDomain = 'home'; 
 
+window.sharedCalc = function(str, scope) {
+    if (!str || String(str).trim() === '') return null;
+    try {
+        // 1. 強制統一規則：x 轉 *, <> 轉 !=
+        let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=');
+        
+        // 2. 變數替換 (Scope 是參數物件，例如 {weight_KG: 60, age_Y: 60})
+        for (let code in scope) {
+            s = s.replace(new RegExp(`\\{${code}\\}`, 'gi'), scope[code] || 0);
+        }
+        // 清理殘留變數
+        s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
+        
+        // 3. 執行運算
+        return new Function('return ' + s)();
+    } catch(e) {
+        console.error("運算失敗:", str, e);
+        return null;
+    }
+};
+
 window.debounce = function(func, delay) {
     let timer;
     return function(...args) {
