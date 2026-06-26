@@ -453,56 +453,46 @@ function executeCalculation() {
         baseSection.classList.add('hidden');
     }
 
-// 2. 執行進階動態矩陣判斷 (這邊的程式碼完全不用動)
-    // 因為 scopeVals 裡面已經有 'min' 和 'max' 了，
-    // 所以底下的 replace('{min}') 會自動把它替換成算出來的數字！
-    if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
-        let matchedResult = "⚠️ 數值超出所有設定的安全條件範圍";
-        
-        // 確保迴圈中的變數宣告正確
-        for (let rule of currentFormula.parsedMatrixRules) {
-            let evalCondition = rule.condition;
+    // 3. 執行進階動態矩陣判斷 (支援多重命中)
+        if (currentFormula.parsedMatrixRules && currentFormula.parsedMatrixRules.length > 0) {
+            let matchedResults = []; // 【修改 1】改用陣列來收集所有命中的結果
             
-            // 參數替換
-            for(let code in scopeVals) {
-                const regex = new RegExp(`{${code}}`, 'gi');
-                evalCondition = evalCondition.replace(regex, scopeVals[code] || 0);
-            }
-            
-            // 轉換邏輯運算子
-            let sanitizedCondition = evalCondition.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
-
-            try {
-                // 如果條件空白或是判定為 True
-                if (sanitizedCondition.trim() === '' || math.evaluate(sanitizedCondition)) {
-                    let evalOutput = rule.result;
-                    
-                    // 輸出結果文字替換
-                    for(let code in scopeVals) {
-                        const regex = new RegExp(`{${code}}`, 'gi');
-                        evalOutput = evalOutput.replace(regex, scopeVals[code] || 0);
-                    }
-                    
-                    // 解析輸出中的 [[數學公式]]
-                    evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
-                        try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
-                    });
-                    
-                    matchedResult = evalOutput;
-                    break; // 命中條件即跳出
+            for (let rule of currentFormula.parsedMatrixRules) {
+                let evalCondition = rule.condition;
+                
+                for(let code in scopeVals) {
+                    const regex = new RegExp(`{${code}}`, 'gi');
+                    evalCondition = evalCondition.replace(regex, scopeVals[code] || 0);
                 }
-            } catch(e) { 
-                console.warn("矩陣判定錯誤:", sanitizedCondition, e); 
+                
+                let sanitizedCondition = evalCondition.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
+    
+                try {
+                    if (sanitizedCondition.trim() === '' || math.evaluate(sanitizedCondition)) {
+                        let evalOutput = rule.result;
+                        for(let code in scopeVals) {
+                            const regex = new RegExp(`{${code}}`, 'gi');
+                            evalOutput = evalOutput.replace(regex, scopeVals[code] || 0);
+                        }
+                        evalOutput = evalOutput.replace(/\[\[(.*?)\]\]/g, (match, expr) => {
+                            try { return Math.round(math.evaluate(expr) * 100) / 100; } catch(e) { return expr; }
+                        });
+                        
+                        // 【修改 2】將算出的結果推入陣列中
+                        matchedResults.push(evalOutput);
+                        
+                        // 【修改 3】移除 break; 讓迴圈繼續往下檢查其他規則！
+                    }
+                } catch(e) { console.warn("矩陣判定錯誤:", sanitizedCondition, e); }
             }
-        }
-        
-        const matrixTextEl = document.getElementById('matrix-result-text');
-        if (matchedResult !== "⚠️ 條件未命中" && matrixTextEl) {
-            matrixTextEl.innerText = matchedResult; // 這裡會保留您 textarea 的換行符號
-            matrixSection.classList.remove('hidden');
-        } else if (matchedResult !== "⚠️ 條件未命中") {
-            // 如果找不到 matrix-result-text 這個 ID，確保舊的寫法也有效
-            matrixSection.innerText = matchedResult;
+            
+            // 【修改 4】將所有命中的結果用換行符號組合起來
+            let finalResult = matchedResults.length > 0 
+                ? matchedResults.join('\n\n------------------------\n\n') // 用分隔線或單純換行區隔多筆結果
+                : "⚠️ 數值未命中任何設定的條件範圍";
+    
+            const matrixTextEl = document.getElementById('matrix-result-text');
+            if (matrixTextEl) matrixTextEl.innerText = finalResult;
             matrixSection.classList.remove('hidden');
         }
     }
