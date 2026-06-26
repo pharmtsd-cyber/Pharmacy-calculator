@@ -306,3 +306,82 @@ document.addEventListener('DOMContentLoaded', () => {
     if(minInput) minInput.addEventListener('input', window.updatePreview);
     if(maxInput) maxInput.addEventListener('input', window.updatePreview);
 });
+
+window.initFormulaPreview = function() {
+    const minRaw = document.getElementById('admin-formula-min').value;
+    const maxRaw = document.getElementById('admin-formula-max').value;
+    const container = document.getElementById('test-params-container');
+    container.innerHTML = '';
+    
+    // 找出所有需要的變數 (例如 {weight_KG})
+    const needed = new Set([...minRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
+                    .concat([...maxRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
+
+    needed.forEach(code => {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.placeholder = code;
+        input.className = 'w-20 border border-gray-400 rounded p-1 text-xs';
+        input.oninput = window.calculatePreview; // 輸入就計算
+        input.setAttribute('data-param', code);
+        container.appendChild(input);
+    });
+};
+
+// 1. 初始化測試參數輸入框 (當公式內容改變時自動掃描變數)
+window.initFormulaPreview = function() {
+    const minRaw = document.getElementById('admin-formula-min').value;
+    const maxRaw = document.getElementById('admin-formula-max').value;
+    const container = document.getElementById('test-params-container');
+    if (!container) return;
+    
+    // 從公式字串中抓出 {xxx} 格式的變數
+    const needed = new Set([...minRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
+                    .concat([...maxRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
+
+    container.innerHTML = '';
+    needed.forEach(code => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col";
+        div.innerHTML = `<label class="text-[9px] font-bold text-gray-500">${code}</label>
+                         <input type="number" class="w-16 border border-gray-300 rounded p-1 text-xs" data-param="${code}" placeholder="數值">`;
+        container.appendChild(div);
+        // 綁定輸入事件，只要數值變更就重新計算
+        div.querySelector('input').addEventListener('input', window.calculatePreview);
+    });
+    window.calculatePreview(); // 初始化時算一次
+};
+
+// 2. 執行計算 (顯示結果)
+window.calculatePreview = function() {
+    const minRaw = document.getElementById('admin-formula-min').value;
+    const maxRaw = document.getElementById('admin-formula-max').value;
+    const inputs = document.querySelectorAll('#test-params-container input');
+    
+    let scope = {};
+    inputs.forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
+
+    const calc = (str) => {
+        try {
+            // 語法預處理：小寫 x 轉 *，{} 轉數值
+            let s = String(str).replace(/x/gi, '*').replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] || 0);
+            return new Function('return ' + s)();
+        } catch(e) { return null; }
+    };
+
+    const vMin = calc(minRaw);
+    const vMax = calc(maxRaw);
+    const resultEl = document.getElementById('preview-result-value');
+    if (resultEl) {
+        resultEl.innerText = (vMin !== null ? vMin : '--') + ' / ' + (vMax !== null ? vMax : '--');
+    }
+};
+
+// 3. 綁定事件
+document.addEventListener('DOMContentLoaded', () => {
+    const minEl = document.getElementById('admin-formula-min');
+    const maxEl = document.getElementById('admin-formula-max');
+    
+    if(minEl) minEl.addEventListener('input', window.initFormulaPreview);
+    if(maxEl) maxEl.addEventListener('input', window.initFormulaPreview);
+});
