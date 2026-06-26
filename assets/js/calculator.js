@@ -489,17 +489,21 @@ window.executeCalculation = function() {
 
 function resetResult() {
     // 重置建議區間顯示
-    document.getElementById('result-value').innerText = '--'; 
-    document.getElementById('result-value').className = 'text-3xl font-extrabold text-[#1B365D]';
+    const resVal = document.getElementById('result-value');
+    if(resVal) {
+        resVal.innerText = '--'; 
+        resVal.className = 'text-3xl font-extrabold text-[#1B365D]';
+    }
     
     const resUnit = document.getElementById('result-unit');
     if(resUnit) resUnit.innerText = ''; 
     
-    // 重置矩陣分析顯示
+    // 重置矩陣分析顯示 (保護內部 DOM)
     const matrixSection = document.getElementById('matrix-result-section');
     if(matrixSection) {
-        matrixSection.innerText = '';
         matrixSection.classList.add('hidden');
+        const matrixTextEl = document.getElementById('matrix-result-text');
+        if (matrixTextEl) matrixTextEl.innerText = '';
     }
     
     // 清除全域暫存變數
