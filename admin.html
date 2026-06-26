@@ -196,7 +196,12 @@
         </section>
 
         <section id="formulas" class="tab-content">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6" id="formula-editor-title">新增計算公式</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800" id="formula-editor-title">新增計算公式</h2>
+                <button onclick="window.openTemplateModal()" class="text-sm bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-300 px-3 py-1.5 rounded font-bold transition shadow-sm">
+                    <i class="fa-solid fa-clone mr-1"></i> 從現有公式載入 (套用範本)
+                </button>
+            </div>
 
             <div class="bg-white p-5 rounded-lg shadow-xl border border-blue-200 relative">
                 <input type="hidden" id="formula-mode" value="add"><input type="hidden" id="formula-id">
@@ -252,6 +257,26 @@
                             <button onclick="window.returnToDashboard()" type="button" class="bg-gray-400 text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-gray-500 transition"><i class="fa-solid fa-arrow-turn-up mr-1"></i> 取消並返回總覽</button>
                             <button id="btn-save-formula" onclick="window.saveFormula()" type="button" class="bg-[#1B365D] text-white px-6 py-2 rounded text-sm font-bold shadow hover:bg-blue-900 transition"><i class="fa-solid fa-floppy-disk mr-1"></i> 儲存運算公式</button>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-template" class="hidden absolute inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
+                <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-2xl border border-gray-200">
+                    <h3 class="text-lg font-bold text-[#1B365D] mb-2"><i class="fa-solid fa-clone text-orange-500"></i> 選擇要套用的公式範本</h3>
+                    <p class="text-xs text-red-500 mb-4 font-bold">注意：載入後將覆蓋您目前編輯區的設定（但不影響已綁定的藥品）。</p>
+                    
+                    <div class="mb-4">
+                        <input type="text" id="input-template-search" placeholder="搜尋公式名稱或藥品代碼..." class="w-full border border-gray-300 rounded p-2 text-sm mb-2 focus:border-blue-500 outline-none shadow-inner">
+                        <div class="max-h-64 overflow-y-auto border border-gray-200 rounded bg-gray-50">
+                            <table class="w-full text-sm data-table">
+                                <tbody id="list-template-formulas">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button onclick="document.getElementById('modal-template').classList.add('hidden')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-bold transition shadow">取消</button>
                     </div>
                 </div>
             </div>
