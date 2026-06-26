@@ -292,25 +292,20 @@ window.applyTemplate = function(formulaId) {
 // --- [公式編輯即時預覽功能] ---
 
 // 初始化綁定與變數偵測
-function setupFormulaPreview() {
+window.setupFormulaPreview = function() {
     const minEl = document.getElementById('admin-formula-min');
     const maxEl = document.getElementById('admin-formula-max');
-    
     if (!minEl || !maxEl) return;
 
-    // 定義運算與 UI 更新邏輯
+    // 統一運算與 UI 更新邏輯
     const runPreview = () => {
-        const minRaw = minEl.value;
-        const maxRaw = maxEl.value;
         const container = document.getElementById('test-params-container');
         const displayEl = document.getElementById('preview-result-value');
         if (!container || !displayEl) return;
 
-        // 1. 動態產生輸入框
-        const params = new Set([...minRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
-                        .concat([...maxRaw.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
+        const params = new Set([...minEl.value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])
+                        .concat([...maxEl.value.matchAll(/\{([a-zA-Z0-9_]+)\}/g)].map(m => m[1])));
         
-        // 只有當參數變更時才重繪輸入框，避免游標跳動
         if (container.dataset.rendered !== JSON.stringify([...params])) {
             container.innerHTML = '';
             params.forEach(code => {
@@ -323,27 +318,20 @@ function setupFormulaPreview() {
             container.dataset.rendered = JSON.stringify([...params]);
         }
 
-        // 2. 進行計算
-        const inputs = container.querySelectorAll('input');
         let scope = {};
-        inputs.forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
+        container.querySelectorAll('input').forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
 
-        const calc = (str) => {
-            try {
-                let s = str.replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] ?? 0).replace(/x/gi, '*');
-                return new Function('return ' + s)();
-            } catch(e) { return '--'; }
-        };
-
-        const vMin = calc(minRaw);
-        const vMax = calc(maxRaw);
-        displayEl.innerText = `Min: ${typeof vMin === 'number' ? vMin.toFixed(2) : vMin} | Max: ${typeof vMax === 'number' ? vMax.toFixed(2) : vMax}`;
+        const vMin = window.sharedCalc(minEl.value, scope);
+        const vMax = window.sharedCalc(maxEl.value, scope);
+        
+        displayEl.innerText = `Min: ${vMin !== null ? vMin.toFixed(2) : '--'} | Max: ${vMax !== null ? vMax.toFixed(2) : '--'}`;
     };
 
-    // 綁定主事件
     minEl.addEventListener('input', runPreview);
     maxEl.addEventListener('input', runPreview);
-}
+};
 
-// 頁面載入後初始化
-document.addEventListener('DOMContentLoaded', setupFormulaPreview);
+// 頁面載入後初始化預覽 (確保不干擾原本的 DOMContentLoaded)
+document.addEventListener('DOMContentLoaded', () => {
+    window.setupFormulaPreview();
+});
