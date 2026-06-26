@@ -241,13 +241,11 @@
                         <div><label class="block text-xs font-bold mb-1 text-blue-700">下限公式 (Min)</label><textarea id="admin-formula-min" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-white shadow-inner" placeholder="例如：{weight} * 1.5"></textarea></div>
                         <div><label class="block text-xs font-bold mb-1 text-blue-700">上限公式 (Max)</label><textarea id="admin-formula-max" rows="2" class="w-full border rounded p-2 text-sm font-mono focus:border-blue-500 focus:bg-white shadow-inner" placeholder="例如：{weight} * 2"></textarea></div>
                     </div>
-                </div>
-
-                <div id="formula-test-preview" class="p-4 bg-gray-50 border border-gray-300 rounded shadow-inner">
-                    <div class="text-xs font-bold text-gray-500 mb-2">參數測試區 (輸入數值即時預覽)：</div>
-                    <div id="test-params-container" class="flex flex-wrap gap-3 mb-2"></div>
-                    <div id="preview-result-container" class="text-sm font-bold text-[#1B365D] border-t pt-2 mt-1">
-                        Min: -- | Max: --
+                    
+                    <div id="formula-test-preview" class="mt-4 p-3 bg-white border border-blue-200 rounded">
+                        <div class="text-[10px] font-bold text-gray-400 mb-2">參數測試區：</div>
+                        <div id="test-params-container" class="flex flex-wrap gap-2 mb-2"></div>
+                        <div class="text-sm font-bold text-[#1B365D]">Min: <span id="prev-min">--</span> | Max: <span id="prev-max">--</span></div>
                     </div>
                 </div>
 
