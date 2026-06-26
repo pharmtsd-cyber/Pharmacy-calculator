@@ -358,22 +358,31 @@ window.calculatePreview = function() {
     const maxRaw = document.getElementById('admin-formula-max').value;
     const inputs = document.querySelectorAll('#test-params-container input');
     
+    // 建立參數對應表
     let scope = {};
     inputs.forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
 
+    // 核心修正：讓 calc 函式執行完整的 JavaScript 計算
     const calc = (str) => {
         try {
-            // 語法預處理：小寫 x 轉 *，{} 轉數值
-            let s = String(str).replace(/x/gi, '*').replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] || 0);
-            return new Function('return ' + s)();
-        } catch(e) { return null; }
+            if (!str) return '--';
+            // 1. 將 {參數名稱} 替換為實際數值
+            let expression = str.replace(/\{([a-zA-Z0-9_]+)\}/g, (m, c) => scope[c] || 0);
+            
+            // 2. 使用 new Function 執行算術運算 (例如將 "60 * 1.5" 轉為 90)
+            return new Function('return ' + expression)();
+        } catch(e) { 
+            return '公式錯誤'; 
+        }
     };
 
     const vMin = calc(minRaw);
     const vMax = calc(maxRaw);
-    const resultEl = document.getElementById('preview-result-value');
-    if (resultEl) {
-        resultEl.innerText = (vMin !== null ? vMin : '--') + ' / ' + (vMax !== null ? vMax : '--');
+    
+    // 更新介面顯示結果
+    const displayEl = document.getElementById('preview-result-value');
+    if (displayEl) {
+        displayEl.innerText = `${vMin} / ${vMax}`;
     }
 };
 
