@@ -172,11 +172,26 @@ window.setupFormulaDrugDropdown = function() {
 window.renderAdminParamPad = function() {
     const pad = document.getElementById('admin-param-pad');
     if(!pad) return;
-    pad.innerHTML = STORE.parameters.map(p => 
-        `<button type="button" class="bg-blue-100 text-blue-800 rounded px-2 py-1 text-[10px] font-bold" onclick="insertParamToFormula('{${p.param_code}}')">
-            ${p.param_name} {${p.param_code}}
+    
+    // 渲染一般參數
+    let html = STORE.parameters.map(p => 
+        `<button type="button" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{${p.param_code}}')">
+            ${p.param_name} <span class="text-gray-400 font-normal ml-0.5">{${p.param_code}}</span>
         </button>`
     ).join('');
+    
+    // 【新增】加入虛擬參數按鈕 (使用不同顏色區隔)
+    html += `
+        <button type="button" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition ml-2" onclick="insertParamToFormula('{min}')">
+            下限結果 <span class="text-pink-400 font-normal ml-0.5">{min}</span>
+        </button>
+        <button type="button" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border border-pink-200 rounded px-2 py-1 text-[10px] font-bold shadow-sm transition" onclick="insertParamToFormula('{max}')">
+            上限結果 <span class="text-pink-400 font-normal ml-0.5">{max}</span>
+        </button>
+    `;
+    
+    pad.innerHTML = html;
+    
     document.querySelectorAll('.op-btn').forEach(btn => {
         btn.onclick = () => insertParamToFormula(' ' + btn.innerText + ' ');
     });
