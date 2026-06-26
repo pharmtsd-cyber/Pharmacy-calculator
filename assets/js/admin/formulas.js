@@ -2,15 +2,16 @@ window.matrixRules = [];
 window.lastFocusedFormulaInput = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 綁定輸入框游標追蹤
     document.querySelectorAll('#admin-formula-min, #admin-formula-max').forEach(el => {
         el.addEventListener('focus', function() { window.lastFocusedFormulaInput = this; });
         el.addEventListener('click', function() { window.lastFocusedFormulaInput = this; });
         el.addEventListener('keyup', function() { window.lastFocusedFormulaInput = this; });
     });
     
-    // 初始化藥品下拉選單
     setupFormulaDrugDropdown();
+    
+    // ======== 新增這行來啟動預覽監聽 ========
+    window.setupFormulaPreview(); 
 });
 
 // --- 矩陣規則 CRUD ---
@@ -96,6 +97,7 @@ window.goToFormulaEdit = function(drugId, formulaId) {
 
     window.matrixRules = (f.matrix_rules) ? JSON.parse(f.matrix_rules) : [];
     window.renderMatrixRulesUI();
+    window.generateTestInputs();
     switchTab('formulas');
     scrollToTop();
 };
@@ -289,26 +291,94 @@ window.applyTemplate = function(formulaId) {
     document.getElementById('modal-template').classList.add('hidden');
 };
 
-window.setupFormulaPreview = function() {
+// ==========================================
+// 參數測試區預覽功能 (Parameter Test Preview)
+// ==========================================
+window.generateTestInputs = function() {
     const minEl = document.getElementById('admin-formula-min');
     const maxEl = document.getElementById('admin-formula-max');
     const container = document.getElementById('test-params-container');
     const displayEl = document.getElementById('preview-result-value');
-    
+
     if (!minEl || !maxEl || !container || !displayEl) return;
 
-    const runPreview = () => {
-        // ... (參數解析邏輯不變) ...
-        let scope = {};
-        container.querySelectorAll('input').forEach(i => scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0);
+    // 將上下限公式合併，並用正則抓取所有 {變數}
+    const combinedStr = (minEl.value || '') + " " + (maxEl.value || '');
+    const uniqueCodes = new Set();
+    let match;
+    const paramRegex = /{([a-zA-Z0-9_]+)}/g;
 
-        // 唯一呼叫點
-        const vMin = window.sharedCalc(minEl.value, scope);
-        const vMax = window.sharedCalc(maxEl.value, scope);
-        
-        displayEl.innerText = `Min: ${vMin !== null ? vMin.toFixed(2) : '--'} | Max: ${vMax !== null ? vMax.toFixed(2) : '--'}`;
-    };
+    while ((match = paramRegex.exec(combinedStr)) !== null) {
+        // 排除系統內建保留字
+        if (match[1].toLowerCase() !== 'min' && match[1].toLowerCase() !== 'max') {
+            uniqueCodes.add(match[1]);
+        }
+    }
 
-    minEl.addEventListener('input', runPreview);
-    maxEl.addEventListener('input', runPreview);
+    if (uniqueCodes.size === 0) {
+        container.innerHTML = '<span class="text-xs text-gray-400">請先在上方輸入包含參數的公式 (例如: {weight})</span>';
+        displayEl.innerText = 'Min: -- | Max: --';
+        return;
+    }
+
+    // 保留目前使用者已經輸入的測試數值，避免重新打字時畫面閃爍/被清空
+    const oldValues = {};
+    container.querySelectorAll('.test-input').forEach(input => oldValues[input.getAttribute('data-param')] = input.value);
+
+    container.innerHTML = '';
+    
+    uniqueCodes.forEach(code => {
+        // 去 STORE 尋找對應的中文名稱
+        const paramDef = STORE.parameters.find(p => p.param_code === code);
+        const displayName = paramDef ? paramDef.param_name : code;
+
+        const div = document.createElement('div');
+        div.innerHTML = `
+            <label class="block text-[10px] font-bold text-[#1B365D] mb-1">${displayName} <span class="text-gray-400 font-normal">{${code}}</span></label>
+            <input type="number" data-param="${code}" class="test-input w-28 border border-blue-300 rounded px-2 py-1 text-xs focus:border-[#1B365D] focus:outline-none shadow-sm" value="${oldValues[code] || ''}" placeholder="輸入數值...">
+        `;
+        container.appendChild(div);
+    });
+
+    // 重新綁定監聽：只要測試輸入框有改變，就重算結果
+    container.querySelectorAll('.test-input').forEach(input => {
+        input.addEventListener('input', window.runPreview);
+    });
+
+    window.runPreview();
+};
+
+window.runPreview = function() {
+    const minEl = document.getElementById('admin-formula-min');
+    const maxEl = document.getElementById('admin-formula-max');
+    const container = document.getElementById('test-params-container');
+    const displayEl = document.getElementById('preview-result-value');
+
+    let scope = {};
+    let allEmpty = true;
+    
+    container.querySelectorAll('.test-input').forEach(i => {
+        if (i.value !== '') allEmpty = false;
+        scope[i.getAttribute('data-param')] = parseFloat(i.value) || 0;
+    });
+
+    // 如果畫面上有參數要填，但使用者全都還沒填，就顯示為空
+    if (allEmpty && container.querySelectorAll('.test-input').length > 0) {
+        displayEl.innerText = 'Min: -- | Max: --';
+        return;
+    }
+
+    // 呼叫 config.js 裡面的共用引擎
+    const vMin = window.sharedCalc(minEl.value, scope);
+    const vMax = window.sharedCalc(maxEl.value, scope);
+
+    displayEl.innerText = `Min: ${vMin !== null ? Math.round(vMin * 100) / 100 : '--'} | Max: ${vMax !== null ? Math.round(vMax * 100) / 100 : '--'}`;
+};
+
+window.setupFormulaPreview = function() {
+    const minEl = document.getElementById('admin-formula-min');
+    const maxEl = document.getElementById('admin-formula-max');
+
+    if (minEl) minEl.addEventListener('input', window.generateTestInputs);
+    if (maxEl) maxEl.addEventListener('input', window.generateTestInputs);
 };
