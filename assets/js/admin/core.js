@@ -156,28 +156,35 @@ window.logout = function() {
 
 async function loadAllData() {
     try {
-        const [drugsData, paramsData, formulasData, staffData, catData, annoData, formData, feedData] = await Promise.all([
-            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getStaff'), 
-            fetchFromGAS('getCategories'), fetchFromGAS('getAnnouncements'), fetchFromGAS('getForms'), fetchFromGAS('getFeedback')
-        ]);
-        if(drugsData) STORE.drugs = drugsData; if(paramsData) STORE.parameters = paramsData;
-        if(formulasData) STORE.formulas = formulasData; if(staffData) STORE.staff = staffData;
-        if(catData) STORE.categories = catData; if(annoData) STORE.announcements = annoData;
-        if(formData) STORE.forms = formData; if(feedData) STORE.feedbacks = feedData;
+        // 【優化】拋棄 Promise.all 多重請求，改用單一高速接口
+        const data = await fetchFromGAS('getAllData');
         
-        document.getElementById('stat-drugs').innerText = STORE.drugs.length;
-        document.getElementById('stat-formulas').innerText = STORE.formulas.length;
-        document.getElementById('stat-params').innerText = STORE.parameters.length;
-        document.getElementById('stat-staff').innerText = STORE.staff.length;
+        if (data) {
+            STORE.drugs = data.drugs || []; 
+            STORE.parameters = data.parameters || [];
+            STORE.formulas = data.formulas || []; 
+            STORE.staff = data.staff || [];
+            STORE.categories = data.categories || []; 
+            STORE.announcements = data.announcements || [];
+            STORE.forms = data.forms || []; 
+            STORE.feedbacks = data.feedbacks || [];
+            
+            document.getElementById('stat-drugs').innerText = STORE.drugs.length;
+            document.getElementById('stat-formulas').innerText = STORE.formulas.length;
+            document.getElementById('stat-params').innerText = STORE.parameters.length;
+            document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-        if(typeof setupDrugListFilters === 'function') setupDrugListFilters();
-        if(typeof renderSystemLists === 'function') renderSystemLists();
-        if(typeof renderDrugsList === 'function') renderDrugsList();
-        if(typeof setupDrugCategorySelects === 'function') setupDrugCategorySelects();
-        if(typeof setupDrugDropdowns === 'function') setupDrugDropdowns();
-        if(typeof renderParameterPad === 'function') renderParameterPad();
-        if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas();
-    } catch(e) { console.error(e); }
+            if(typeof setupDrugListFilters === 'function') setupDrugListFilters();
+            if(typeof renderSystemLists === 'function') renderSystemLists();
+            if(typeof renderDrugsList === 'function') renderDrugsList();
+            if(typeof setupDrugCategorySelects === 'function') setupDrugCategorySelects();
+            if(typeof setupDrugDropdowns === 'function') setupDrugDropdowns();
+            if(typeof renderParameterPad === 'function') renderParameterPad();
+            if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas();
+        }
+    } catch(e) { 
+        console.error("資料載入失敗:", e); 
+    }
 }
 
 window.sendPost = async function(payload) {
