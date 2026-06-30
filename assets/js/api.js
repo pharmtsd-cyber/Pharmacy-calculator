@@ -1,36 +1,24 @@
 async function fetchFromGAS(action) {
-    if (!CONFIG.GAS_API_URL) {
-        console.error("尚未設定 GAS API 網址");
-        return null;
-    }
+    if (!CONFIG.GAS_API_URL) return null;
 
     try {
-        const response = await fetch(`${CONFIG.GAS_API_URL}?action=${action}`);
+        // 加入 mode: 'cors' 與 credentials: 'omit'
+        const response = await fetch(`${CONFIG.GAS_API_URL}?action=${action}`, {
+            method: 'GET',
+            mode: 'cors',         // 明確要求跨域資源共享
+            credentials: 'omit'   // 排除 Cookie，防止 Google 因為帳號衝突而轉址
+        });
         
-        // 【優化點 1】先檢查 HTTP 狀態碼
-        if (!response.ok) {
-            console.error("API 連線失敗，狀態碼:", response.status);
-            return null;
-        }
+        if (!response.ok) return null;
 
-        // 【優化點 2】先取得文字內容，檢查是否為 HTML 錯誤頁面 (避免直接解析 JSON 報錯)
         const text = await response.text();
-        
-        // 如果內容包含 <!DOCTYPE html> 或 <html>，代表被 Google 攔截重導向了
         if (text.trim().startsWith('<')) {
-            console.error("API 被伺服器攔截 (可能是 302 重導向或權限問題)，回傳內容非 JSON。");
+            console.error("API 被伺服器攔截 (重導向)");
             return null;
         }
 
-        // 正常解析 JSON
         const result = JSON.parse(text);
-        
-        if (result.status === "success") {
-            return result.data;
-        } else {
-            console.error("API 業務邏輯錯誤:", result.message);
-            return null;
-        }
+        return result.status === "success" ? result.data : null;
     } catch (error) {
         console.error("Fetch 發生異常:", error);
         return null;
