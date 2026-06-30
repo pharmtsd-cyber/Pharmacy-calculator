@@ -188,11 +188,30 @@ async function loadAllData() {
 }
 
 window.sendPost = async function(payload) {
-    const res = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-    const result = await res.json();
-    if(result.status === 'success') { 
-        loadAllData();
-    } else { alert("失敗：" + result.message); }
+    try {
+        const res = await fetch(CONFIG.GAS_API_URL, { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+        
+        // 【核心修改】先抓取文字，檢查是否為 HTML 錯誤頁面
+        const text = await res.text();
+        if (text.trim().startsWith('<')) {
+            console.error("API 被伺服器攔截，回傳了 HTML 錯誤頁:", text);
+            alert("系統安全機制阻擋了請求 (可能是權限衝突)，請嘗試使用無痕視窗。");
+            return;
+        }
+
+        const result = JSON.parse(text);
+        if(result.status === 'success') { 
+            loadAllData();
+        } else { 
+            alert("失敗：" + result.message); 
+        }
+    } catch(e) { 
+        console.error("連線錯誤:", e);
+        alert("網路連線異常，請確認 API 網址是否正確且已重新部署。"); 
+    }
 };
 
 window.deleteRecord = async function(action, id) {
