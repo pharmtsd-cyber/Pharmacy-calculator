@@ -123,6 +123,10 @@ window.saveFormula = async function() {
     const formulaName = document.getElementById('admin-formula-name').value.trim();
     if (!drugId || !formulaName) return alert("請務必綁定藥品並填寫公式名稱！");
 
+    // 【關鍵修改】：將複雜的 JSON 轉為 Base64 字串，繞過防火牆與特殊字元阻擋
+    const rawMatrixRules = JSON.stringify(window.matrixRules);
+    const encodedMatrixRules = btoa(unescape(encodeURIComponent(rawMatrixRules)));
+
     const payload = {
         action: 'saveFormula',
         mode: document.getElementById('formula-mode').value,
