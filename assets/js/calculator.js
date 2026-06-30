@@ -66,36 +66,48 @@ window.toggleAccordion = function(contentId, btnElement) {
 async function initializeCalculator() {
     const loadingStatus = document.getElementById('loading-status');
     try {
-        const [drugsData, paramsData, formulasData, annoData, catData, settingsData] = await Promise.all([
-            fetchFromGAS('getDrugs'), fetchFromGAS('getParameters'), fetchFromGAS('getFormulas'), fetchFromGAS('getAnnouncements'), fetchFromGAS('getCategories'), fetchFromGAS('getSettings')
-        ]);
+        // 【優化】前台也改為單一請求，避免與後台跳轉時發生請求碰撞
+        const data = await fetchFromGAS('getAllData');
 
-        if (drugsData && paramsData && formulasData) {
-            STORE.drugs = drugsData; STORE.parameters = paramsData; STORE.formulas = formulasData;
-            STORE.categories = catData || []; STORE.announcements = annoData || [];
-            STORE.settings = {}; if(settingsData) settingsData.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
+        if (data) {
+            STORE.drugs = data.drugs || []; 
+            STORE.parameters = data.parameters || []; 
+            STORE.formulas = data.formulas || [];
+            STORE.categories = data.categories || []; 
+            STORE.announcements = data.announcements || [];
             
-            renderHomeContent(); setupFilters(); applyFilters();
+            STORE.settings = {}; 
+            if (data.settings) {
+                data.settings.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
+            }
+            
+            renderHomeContent(); 
+            setupFilters(); 
+            applyFilters();
 
+            // 處理跳轉狀態恢復
             const savedStateStr = localStorage.getItem('pharma_front_state');
-            if(savedStateStr) {
+            if (savedStateStr) {
                 try {
                     const savedState = JSON.parse(savedStateStr);
-                    if(savedState && savedState.domain && savedState.domain !== 'home') {
+                    if (savedState && savedState.domain && savedState.domain !== 'home') {
                         const tab = document.querySelector(`.front-nav[data-target="${savedState.domain}"]`);
-                        if(tab) tab.click(); 
+                        if (tab) tab.click(); 
                     }
-                    if(savedState && savedState.drugId) {
+                    if (savedState && savedState.drugId) {
                         const d = STORE.drugs.find(x => String(x.drug_id) === String(savedState.drugId));
-                        if(d) setTimeout(() => selectDrug(d), 300);
+                        if (d) setTimeout(() => selectDrug(d), 300);
                     }
                 } catch(e) { console.error(e); }
                 localStorage.removeItem('pharma_front_state');
             }
         } else {
-            loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; loadingStatus.classList.add('text-red-500');
+            loadingStatus.innerText = "資料載入失敗，請確認 API 網址。"; 
+            loadingStatus.classList.add('text-red-500');
         }
-    } catch (error) { loadingStatus.innerText = "系統發生錯誤。"; }
+    } catch (error) { 
+        loadingStatus.innerText = "系統發生錯誤。"; 
+    }
 }
 
 function renderHomeContent() {
