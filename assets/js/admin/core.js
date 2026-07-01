@@ -112,7 +112,7 @@ window.handleChangePassword = async function() {
     }
 };
 
-// 【優化核心】防呆跳轉引擎：處理公式檢視與一般編輯的雙重情境
+// 防呆跳轉引擎
 function handleUrlJump() {
     const urlParams = new URLSearchParams(window.location.search);
     const drugId = urlParams.get('drug_id');
@@ -120,32 +120,22 @@ function handleUrlJump() {
 
     if (drugId) {
         if (action === 'formula_view') {
-            // 情境二：點選「公式修改」
             switchTab('dashboard');
             const df = document.getElementById('filter-dash-drugs');
             if (df) {
-                // 精準鎖定該藥品
                 const d = STORE.drugs.find(x => String(x.drug_id) === String(drugId) || String(x.drug_code) === String(drugId));
                 if (d) {
-                    // 自動填入搜尋框，並觸發總表連動
                     df.value = d.drug_code || d.generic_name || d.local_name;
                     if(typeof window.renderDrugsList === 'function') window.renderDrugsList();
                     
-                    // 貼心設計：稍微延遲讓畫面繪製完成後，自動滾動到公式大表
                     setTimeout(() => {
                         scrollToElement('list-dash-formulas');
                     }, 200);
                 }
             }
         } else {
-            // 情境一：點選「資訊修改」，直接進入藥品詳細編輯頁
             if(typeof window.viewDrug === 'function') window.viewDrug(drugId);
         }
-        
-        // ⚠️ 【關鍵修復】：已經將這行 replaceState 註解刪除！
-        // 保留網址列的參數，避免打斷 Tailwind CSS v4 CDN 的背景模組載入，
-        // 同時也帶來好處：如果使用者重新整理網頁，依然能準確回到該藥品的編輯畫面。
-        // window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
@@ -154,39 +144,72 @@ window.logout = function() {
     window.location.reload();
 };
 
-async function loadAllData() {
-    try {
-        // 【優化】拋棄 Promise.all 多重請求，改用單一高速接口
-        const data = await fetchFromGAS('getAllData');
-        
-        if (data) {
-            STORE.drugs = data.drugs || []; 
-            STORE.parameters = data.parameters || [];
-            STORE.formulas = data.formulas || []; 
-            STORE.staff = data.staff || [];
-            STORE.categories = data.categories || []; 
-            STORE.announcements = data.announcements || [];
-            STORE.forms = data.forms || []; 
-            STORE.feedbacks = data.feedbacks || [];
-            
-            document.getElementById('stat-drugs').innerText = STORE.drugs.length;
-            document.getElementById('stat-formulas').innerText = STORE.formulas.length;
-            document.getElementById('stat-params').innerText = STORE.parameters.length;
-            document.getElementById('stat-staff').innerText = STORE.staff.length;
+// ==========================================
+// 核心：全域資料渲染函數
+// ==========================================
+window.applyDataToStoreAndRender = function(data) {
+    if (!data) return;
+    
+    STORE.drugs = data.drugs || []; 
+    STORE.parameters = data.parameters || [];
+    STORE.formulas = data.formulas || []; 
+    STORE.staff = data.staff || [];
+    STORE.categories = data.categories || []; 
+    STORE.announcements = data.announcements || [];
+    STORE.forms = data.forms || []; 
+    STORE.feedbacks = data.feedbacks || [];
+    
+    if(document.getElementById('stat-drugs')) document.getElementById('stat-drugs').innerText = STORE.drugs.length;
+    if(document.getElementById('stat-formulas')) document.getElementById('stat-formulas').innerText = STORE.formulas.length;
+    if(document.getElementById('stat-params')) document.getElementById('stat-params').innerText = STORE.parameters.length;
+    if(document.getElementById('stat-staff')) document.getElementById('stat-staff').innerText = STORE.staff.length;
 
-            if(typeof setupDrugListFilters === 'function') setupDrugListFilters();
-            if(typeof renderSystemLists === 'function') renderSystemLists();
-            if(typeof renderDrugsList === 'function') renderDrugsList();
-            if(typeof setupDrugCategorySelects === 'function') setupDrugCategorySelects();
-            if(typeof setupDrugDropdowns === 'function') setupDrugDropdowns();
-            if(typeof renderParameterPad === 'function') renderParameterPad();
-            if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas();
+    try { if(typeof setupDrugListFilters === 'function') setupDrugListFilters(); } catch(e){}
+    try { if(typeof renderSystemLists === 'function') renderSystemLists(); } catch(e){}
+    try { if(typeof renderDrugsList === 'function') renderDrugsList(); } catch(e){}
+    try { if(typeof setupDrugCategorySelects === 'function') setupDrugCategorySelects(); } catch(e){}
+    try { if(typeof setupDrugDropdowns === 'function') setupDrugDropdowns(); } catch(e){}
+    try { if(typeof renderParameterPad === 'function') renderParameterPad(); } catch(e){}
+    try { if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas(); } catch(e){}
+};
+
+// ==========================================
+// 極速載入引擎 (Offline-First)
+// ==========================================
+window.loadAllData = async function(forceRefresh = false) {
+    try {
+        const cachedDataStr = localStorage.getItem('PHARMA_DB_CACHE');
+        const localVersion = localStorage.getItem('PHARMA_DB_VERSION');
+
+        // 1. 如果有快取且不是強制更新，瞬間畫出畫面！
+        if (cachedDataStr && !forceRefresh) {
+            console.log("⚡ 從本機快取瞬間載入");
+            window.applyDataToStoreAndRender(JSON.parse(cachedDataStr));
+        }
+
+        // 2. 背景詢問最新版本號 (極輕量)
+        const remoteVersion = await fetchFromGAS('getVersion');
+
+        // 3. 版本號不同 或 強制更新 時，才從雲端拉取全部資料
+        if (!localVersion || remoteVersion !== localVersion || forceRefresh) {
+            console.log("🔄 版本更新或強制重整，開始下載最新資料庫...");
+            const freshData = await fetchFromGAS('getAllData');
+            
+            if (freshData) {
+                localStorage.setItem('PHARMA_DB_CACHE', JSON.stringify(freshData));
+                if(remoteVersion) localStorage.setItem('PHARMA_DB_VERSION', remoteVersion);
+                window.applyDataToStoreAndRender(freshData);
+                console.log("✅ 資料庫更新完畢");
+            }
         }
     } catch(e) { 
         console.error("資料載入失敗:", e); 
     }
-}
+};
 
+// ==========================================
+// 共用寫入引擎 (POST) - 支援回傳結果供按鈕解除鎖定
+// ==========================================
 window.sendPost = async function(payload) {
     try {
         const res = await fetch(CONFIG.GAS_API_URL, { 
@@ -194,26 +217,32 @@ window.sendPost = async function(payload) {
             body: JSON.stringify(payload) 
         });
         
-        // 【核心修改】先抓取文字，檢查是否為 HTML 錯誤頁面
         const text = await res.text();
         if (text.trim().startsWith('<')) {
             console.error("API 被伺服器攔截，回傳了 HTML 錯誤頁:", text);
             alert("系統安全機制阻擋了請求 (可能是權限衝突)，請嘗試使用無痕視窗。");
-            return;
+            return { status: 'error' };
         }
 
         const result = JSON.parse(text);
         if(result.status === 'success') { 
-            loadAllData();
+            // 寫入成功後，立刻觸發背景強制更新快取，但不鎖死畫面
+            await loadAllData(true);
+            return result;
         } else { 
             alert("失敗：" + result.message); 
+            return result;
         }
     } catch(e) { 
         console.error("連線錯誤:", e);
         alert("網路連線異常，請確認 API 網址是否正確且已重新部署。"); 
+        return { status: 'error' };
     }
 };
 
+// ==========================================
+// 共用刪除功能
+// ==========================================
 window.deleteRecord = async function(action, id) {
     if (action === 'deleteStaff' && id === '93397') return alert("不可刪除程式管理員！");
     if (!confirm("確定要刪除這筆資料嗎？此操作無法復原！")) return;
@@ -222,5 +251,7 @@ window.deleteRecord = async function(action, id) {
     if(action==='deleteStaff') payload.emp_id = id; if(action==='deleteParameter') payload.param_code = id; if(action==='deleteDrug') payload.drug_id = id; 
     if(action==='deleteFormula') payload.formula_id = id; if(action==='deleteCategory') payload.cat_id = id; if(action==='deleteAnnouncement') payload.announce_id = id; 
     if(action==='deleteForm') payload.form_id = id; if(action==='deleteFeedback') payload.feedback_id = id;
-    await sendPost(payload);
+    
+    const res = await sendPost(payload);
+    if(res && res.status === 'success') alert("刪除成功！");
 };
