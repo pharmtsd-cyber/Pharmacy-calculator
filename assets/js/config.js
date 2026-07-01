@@ -14,34 +14,48 @@ const STORE = {
 };
 
 // ==========================================
-// 共用公式運算引擎 (前後台共用)
+// 共用公式運算引擎 (前後台共用 - 終極防呆版)
 // ==========================================
 window.sharedCalc = function(str, scope) {
     if (!str || String(str).trim() === '') return null;
     try {
-        // 正規化邏輯統一在此：新增對 or 與 and 的支援 (注意空白，避免取代到變數名稱)
+        // 1. 全形轉半形、大小寫 x 轉 *、英文字母邏輯轉換
         let s = String(str)
             .replace(/x/gi, '*')
             .replace(/<>/g, '!=')
             .replace(/\[/g, '(')
             .replace(/\]/g, ')')
-            .replace(/\s+or\s+/gi, ' || ')   // 將 or 自動轉換為 JavaScript 的 ||
-            .replace(/\s+and\s+/gi, ' && '); // 將 and 自動轉換為 JavaScript 的 &&
+            .replace(/\s+or\s+/gi, ' || ')
+            .replace(/\s+and\s+/gi, ' && ')
+            .replace(/＞/g, '>')
+            .replace(/＜/g, '<')
+            .replace(/＝/g, '=')
+            .replace(/｜｜/g, '||');
         
-        // 變數替換 (依照傳入的 scope)
+        // 2. 智慧處理等號 (把單個 = 變成 JS 的 ==，同時保護 >=, <=, != 不被破壞)
+        s = s.replace(/==/g, '=')
+             .replace(/!=/g, '#NEQ#')
+             .replace(/>=/g, '#GTE#')
+             .replace(/<=/g, '#LTE#')
+             .replace(/=/g, '==')
+             .replace(/#NEQ#/g, '!=')
+             .replace(/#GTE#/g, '>=')
+             .replace(/#LTE#/g, '<=');
+        
+        // 3. 變數替換 (依照傳入的 scope)
         for (let code in scope) {
-            // 如果沒填數值預設為 0
             const val = (scope[code] === '' || isNaN(scope[code])) ? 0 : scope[code];
             s = s.replace(new RegExp(`\\{${code}\\}`, 'gi'), val);
         }
         
-        // 剩下的未替換變數強迫補 0，避免 eval 壞掉
+        // 4. 剩下的未替換變數強迫補 0，避免 eval 壞掉
         s = s.replace(/{[a-zA-Z0-9_]+}/g, '0');
         
-        // 執行運算
+        // 5. 執行運算
         return new Function('return ' + s)();
     } catch(e) {
-        console.error("運算失敗:", str, e);
+        // 如果還是有奇怪的語法錯誤，會在瀏覽器 F12 顯示，不會讓整個網頁白畫面
+        console.error("運算失敗:", str, "錯誤原因:", e);
         return null;
     }
 };
