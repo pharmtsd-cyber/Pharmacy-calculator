@@ -2,18 +2,24 @@
 var CURRENT_USER = null;
 var CONTEXT_DRUG = null;
 var stateTags = { relatedDrugs: [] };
-Object.assign(STORE, { staff: [], categories: [], announcements: [], forms: [], feedbacks: [] });
+Object.assign(STORE, { staff: [], categories: [], announcements: [], forms: [], feedbacks: [], settings: {} });
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btn-login').onclick = handleLogin;
-    document.getElementById('btn-open-pw').onclick = () => document.getElementById('pw-modal').classList.remove('hidden');
-    document.getElementById('btn-pw-cancel').onclick = () => document.getElementById('pw-modal').classList.add('hidden');
-    document.getElementById('btn-pw-save').onclick = handleChangePassword;
+    // 防呆綁定：確認元素存在才綁定事件，確保前後台都能順利運行
+    const btnLogin = document.getElementById('btn-login');
+    if (btnLogin) btnLogin.onclick = handleLogin;
+    
+    const btnOpenPw = document.getElementById('btn-open-pw');
+    if (btnOpenPw) btnOpenPw.onclick = () => document.getElementById('pw-modal').classList.remove('hidden');
+    
+    const btnPwCancel = document.getElementById('btn-pw-cancel');
+    if (btnPwCancel) btnPwCancel.onclick = () => document.getElementById('pw-modal').classList.add('hidden');
+    
+    const btnPwSave = document.getElementById('btn-pw-save');
+    if (btnPwSave) btnPwSave.onclick = handleChangePassword;
 
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', () => {
-            switchTab(item.getAttribute('data-target'));
-        });
+        item.addEventListener('click', () => switchTab(item.getAttribute('data-target')));
     });
 
     checkAutoLogin();
@@ -58,17 +64,23 @@ async function checkAutoLogin() {
     if (savedUser) {
         try {
             CURRENT_USER = JSON.parse(savedUser);
-            document.getElementById('login-overlay').classList.add('hidden');
-            document.getElementById('dash-name').innerText = CURRENT_USER.name;
-            document.getElementById('current-user-info').innerText = `${CURRENT_USER.name} (${CURRENT_USER.role})`;
+            if (document.getElementById('login-overlay')) document.getElementById('login-overlay').classList.add('hidden');
+            if (document.getElementById('dash-name')) document.getElementById('dash-name').innerText = CURRENT_USER.name;
+            if (document.getElementById('current-user-info')) document.getElementById('current-user-info').innerText = `${CURRENT_USER.name} (${CURRENT_USER.role})`;
             
             if (CURRENT_USER.role !== 'Admin' && CURRENT_USER.role !== 'Programmer') {
-                document.getElementById('btn-save-staff').disabled = true; 
-                document.getElementById('btn-save-staff').classList.replace('bg-[#1B365D]', 'bg-gray-400');
+                const btnStaff = document.getElementById('btn-save-staff');
+                if (btnStaff) {
+                    btnStaff.disabled = true; 
+                    btnStaff.classList.replace('bg-[#1B365D]', 'bg-gray-400');
+                }
             }
             
-            await loadAllData();
-            handleUrlJump();
+            // 後台才需要跳轉，前台交給 calculator.js 處理
+            if (document.getElementById('login-overlay')) {
+                await window.loadAllData();
+                handleUrlJump();
+            }
         } catch(e) {
             localStorage.removeItem('pharma_user');
         }
@@ -76,9 +88,14 @@ async function checkAutoLogin() {
 }
 
 async function handleLogin() {
-    const id = document.getElementById('login-id').value.trim(), pw = document.getElementById('login-pw').value, msg = document.getElementById('login-msg');
+    const id = document.getElementById('login-id').value.trim();
+    const pw = document.getElementById('login-pw').value;
+    const msg = document.getElementById('login-msg');
+    
     if(!id || !pw) return msg.innerText = "請輸入員編與密碼";
-    const btn = document.getElementById('btn-login'); btn.innerText = "驗證中..."; btn.disabled = true;
+    const btn = document.getElementById('btn-login'); 
+    btn.innerText = "驗證中..."; btn.disabled = true;
+    
     try {
         const response = await fetch(CONFIG.GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: 'login', emp_id: id, password: pw }) });
         const result = await response.json();
@@ -89,14 +106,25 @@ async function handleLogin() {
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('dash-name').innerText = CURRENT_USER.name;
             document.getElementById('current-user-info').innerText = `${CURRENT_USER.name} (${CURRENT_USER.role})`;
+            
             if (CURRENT_USER.role !== 'Admin' && CURRENT_USER.role !== 'Programmer') {
-                document.getElementById('btn-save-staff').disabled = true; document.getElementById('btn-save-staff').classList.replace('bg-[#1B365D]', 'bg-gray-400');
+                const btnStaff = document.getElementById('btn-save-staff');
+                if (btnStaff) {
+                    btnStaff.disabled = true; 
+                    btnStaff.classList.replace('bg-[#1B365D]', 'bg-gray-400');
+                }
             }
             
-            await loadAllData();
+            await window.loadAllData();
             handleUrlJump();
-        } else msg.innerText = result.message;
-    } catch(e) { msg.innerText = "網路連線異常"; } finally { btn.innerText = "登入系統"; btn.disabled = false; }
+        } else {
+            msg.innerText = result.message;
+        }
+    } catch(e) { 
+        msg.innerText = "網路連線異常"; 
+    } finally { 
+        btn.innerText = "登入系統"; btn.disabled = false; 
+    }
 }
 
 window.handleChangePassword = async function() {
@@ -112,7 +140,6 @@ window.handleChangePassword = async function() {
     }
 };
 
-// 防呆跳轉引擎
 function handleUrlJump() {
     const urlParams = new URLSearchParams(window.location.search);
     const drugId = urlParams.get('drug_id');
@@ -127,10 +154,7 @@ function handleUrlJump() {
                 if (d) {
                     df.value = d.drug_code || d.generic_name || d.local_name;
                     if(typeof window.renderDrugsList === 'function') window.renderDrugsList();
-                    
-                    setTimeout(() => {
-                        scrollToElement('list-dash-formulas');
-                    }, 200);
+                    setTimeout(() => { scrollToElement('list-dash-formulas'); }, 200);
                 }
             }
         } else {
@@ -159,11 +183,18 @@ window.applyDataToStoreAndRender = function(data) {
     STORE.forms = data.forms || []; 
     STORE.feedbacks = data.feedbacks || [];
     
+    // 處理設定檔轉為 key-value
+    STORE.settings = {};
+    if (data.settings && Array.isArray(data.settings)) {
+        data.settings.forEach(s => STORE.settings[s.setting_key] = s.setting_value);
+    }
+    
     if(document.getElementById('stat-drugs')) document.getElementById('stat-drugs').innerText = STORE.drugs.length;
     if(document.getElementById('stat-formulas')) document.getElementById('stat-formulas').innerText = STORE.formulas.length;
     if(document.getElementById('stat-params')) document.getElementById('stat-params').innerText = STORE.parameters.length;
     if(document.getElementById('stat-staff')) document.getElementById('stat-staff').innerText = STORE.staff.length;
 
+    // 觸發各頁面渲染 (前後台共用，不報錯)
     try { if(typeof setupDrugListFilters === 'function') setupDrugListFilters(); } catch(e){}
     try { if(typeof renderSystemLists === 'function') renderSystemLists(); } catch(e){}
     try { if(typeof renderDrugsList === 'function') renderDrugsList(); } catch(e){}
@@ -171,6 +202,8 @@ window.applyDataToStoreAndRender = function(data) {
     try { if(typeof setupDrugDropdowns === 'function') setupDrugDropdowns(); } catch(e){}
     try { if(typeof renderParameterPad === 'function') renderParameterPad(); } catch(e){}
     try { if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas(); } catch(e){}
+    try { if(typeof renderHomeContent === 'function') renderHomeContent(); } catch(e){} 
+    try { if(typeof applyFilters === 'function') applyFilters(); } catch(e){}
 };
 
 // ==========================================
@@ -181,16 +214,16 @@ window.loadAllData = async function(forceRefresh = false) {
         const cachedDataStr = localStorage.getItem('PHARMA_DB_CACHE');
         const localVersion = localStorage.getItem('PHARMA_DB_VERSION');
 
-        // 1. 如果有快取且不是強制更新，瞬間畫出畫面！
+        // 1. 若有快取且非強制更新，瞬間畫出畫面
         if (cachedDataStr && !forceRefresh) {
             console.log("⚡ 從本機快取瞬間載入");
             window.applyDataToStoreAndRender(JSON.parse(cachedDataStr));
         }
 
-        // 2. 背景詢問最新版本號 (極輕量)
+        // 2. 靜默抓取最新版本號
         const remoteVersion = await fetchFromGAS('getVersion');
 
-        // 3. 版本號不同 或 強制更新 時，才從雲端拉取全部資料
+        // 3. 版本號不同 或 強制更新 時，從雲端拉取全部資料
         if (!localVersion || remoteVersion !== localVersion || forceRefresh) {
             console.log("🔄 版本更新或強制重整，開始下載最新資料庫...");
             const freshData = await fetchFromGAS('getAllData');
@@ -208,7 +241,7 @@ window.loadAllData = async function(forceRefresh = false) {
 };
 
 // ==========================================
-// 共用寫入引擎 (POST) - 支援回傳結果供按鈕解除鎖定
+// 共用寫入引擎 (POST)
 // ==========================================
 window.sendPost = async function(payload) {
     try {
@@ -219,15 +252,15 @@ window.sendPost = async function(payload) {
         
         const text = await res.text();
         if (text.trim().startsWith('<')) {
-            console.error("API 被伺服器攔截，回傳了 HTML 錯誤頁:", text);
+            console.error("API 遭攔截，回傳了 HTML:", text);
             alert("系統安全機制阻擋了請求 (可能是權限衝突)，請嘗試使用無痕視窗。");
             return { status: 'error' };
         }
 
         const result = JSON.parse(text);
         if(result.status === 'success') { 
-            // 寫入成功後，立刻觸發背景強制更新快取，但不鎖死畫面
-            await loadAllData(true);
+            // 寫入成功後，立刻觸發背景強制更新快取
+            await window.loadAllData(true);
             return result;
         } else { 
             alert("失敗：" + result.message); 
@@ -235,7 +268,7 @@ window.sendPost = async function(payload) {
         }
     } catch(e) { 
         console.error("連線錯誤:", e);
-        alert("網路連線異常，請確認 API 網址是否正確且已重新部署。"); 
+        alert("網路連線異常，請確認網址或網路狀態。"); 
         return { status: 'error' };
     }
 };
@@ -248,10 +281,15 @@ window.deleteRecord = async function(action, id) {
     if (!confirm("確定要刪除這筆資料嗎？此操作無法復原！")) return;
     
     const payload = { action: action };
-    if(action==='deleteStaff') payload.emp_id = id; if(action==='deleteParameter') payload.param_code = id; if(action==='deleteDrug') payload.drug_id = id; 
-    if(action==='deleteFormula') payload.formula_id = id; if(action==='deleteCategory') payload.cat_id = id; if(action==='deleteAnnouncement') payload.announce_id = id; 
-    if(action==='deleteForm') payload.form_id = id; if(action==='deleteFeedback') payload.feedback_id = id;
+    if(action==='deleteStaff') payload.emp_id = id; 
+    if(action==='deleteParameter') payload.param_code = id; 
+    if(action==='deleteDrug') payload.drug_id = id; 
+    if(action==='deleteFormula') payload.formula_id = id; 
+    if(action==='deleteCategory') payload.cat_id = id; 
+    if(action==='deleteAnnouncement') payload.announce_id = id; 
+    if(action==='deleteForm') payload.form_id = id; 
+    if(action==='deleteFeedback') payload.feedback_id = id;
     
-    const res = await sendPost(payload);
+    const res = await window.sendPost(payload);
     if(res && res.status === 'success') alert("刪除成功！");
 };
