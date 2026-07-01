@@ -261,11 +261,12 @@ function selectDrug(drug) {
         return fId !== '' && (fId === targetId || fId === targetCode);
     });
 
-    const selectEl = document.getElementById('formula-select'); selectEl.innerHTML = '';
+    const formulaContainer = document.getElementById('formula-list-container'); 
+    if(formulaContainer) formulaContainer.innerHTML = '';
     const calcResultCard = document.getElementById('calc-result-card');
     
     if (drugFormulas.length === 0) { 
-        selectEl.innerHTML = '<option value="">(尚未建置計算公式)</option>'; 
+        if(formulaContainer) formulaContainer.innerHTML = '<div class="text-sm text-gray-400 italic py-2">(尚未建置計算公式)</div>'; 
         document.getElementById('dynamic-parameters-container').classList.add('hidden');
         document.getElementById('formula-remark-card').classList.add('hidden');
         document.getElementById('absolute-max-alert').classList.add('hidden');
@@ -275,17 +276,41 @@ function selectDrug(drug) {
         document.getElementById('dynamic-parameters-container').classList.remove('hidden');
         if (calcResultCard) calcResultCard.classList.remove('hidden');
         
-        drugFormulas.forEach(f => {
-            const option = document.createElement('option'); option.value = f.formula_id; option.innerText = f.formula_name; selectEl.appendChild(option);
+        // 將每個公式變成一個可點擊的 Radio 卡片
+        drugFormulas.forEach((f, index) => {
+            const isChecked = index === 0 ? 'checked' : '';
+            const activeClass = index === 0 ? 'border-[#1B365D] bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50';
+            
+            const label = document.createElement('label');
+            label.className = `cursor-pointer border-2 rounded-lg p-3 text-sm flex items-center gap-3 transition shadow-sm ${activeClass}`;
+            label.innerHTML = `
+                <input type="radio" name="formula_choice" value="${f.formula_id}" class="w-4 h-4 text-[#1B365D] focus:ring-[#1B365D] mt-0.5" ${isChecked}>
+                <div class="font-bold text-gray-800 flex-grow">${f.formula_name}</div>
+            `;
+            
+            // 綁定點擊切換事件
+            label.querySelector('input').addEventListener('change', (e) => {
+                // 將所有卡片恢復原狀
+                formulaContainer.querySelectorAll('label').forEach(lbl => {
+                    lbl.classList.remove('border-[#1B365D]', 'bg-blue-50');
+                    lbl.classList.add('border-gray-200', 'bg-white');
+                });
+                // 把被選中的卡片高亮
+                label.classList.remove('border-gray-200', 'bg-white');
+                label.classList.add('border-[#1B365D]', 'bg-blue-50');
+
+                currentFormula = drugFormulas.find(fx => String(fx.formula_id).trim() === String(e.target.value).trim()); 
+                renderDynamicParameters(currentFormula); 
+            });
+
+            formulaContainer.appendChild(label);
         });
-        selectEl.onchange = (e) => { 
-            currentFormula = drugFormulas.find(f => String(f.formula_id).trim() === String(e.target.value).trim()); 
-            renderDynamicParameters(currentFormula); 
-        };
+
+        // 預設載入第一筆公式
         currentFormula = drugFormulas[0]; 
         renderDynamicParameters(currentFormula);
     }
-}
+} // selectDrug 結束的地方
 
 function renderDynamicParameters(formula) {
     if (!formula) return;
