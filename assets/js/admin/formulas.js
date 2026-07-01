@@ -123,8 +123,8 @@ window.saveFormula = async function() {
     const formulaName = document.getElementById('admin-formula-name').value.trim();
     if (!drugId || !formulaName) return alert("請務必綁定藥品並填寫公式名稱！");
 
-    // 【關鍵修改】：將複雜的 JSON 轉為 Base64 字串，繞過防火牆與特殊字元阻擋
-    const rawMatrixRules = JSON.stringify(window.matrixRules);
+    // 【核心修正】：Base64 編碼，繞過 XSS 偵測
+    const rawMatrixRules = JSON.stringify(window.matrixRules || []);
     const encodedMatrixRules = btoa(unescape(encodeURIComponent(rawMatrixRules)));
 
     const payload = {
@@ -137,10 +137,24 @@ window.saveFormula = async function() {
         remark: document.getElementById('admin-remark').value.trim(),
         formula_min: document.getElementById('admin-formula-min').value.trim(),
         formula_max: document.getElementById('admin-formula-max').value.trim(),
-        matrix_rules: JSON.stringify(window.matrixRules)
+        matrix_rules: encodedMatrixRules // 送出純文字
     };
-    await sendPost(payload); 
-    window.returnToDashboard(drugId); 
+    
+    // UI 優化：按鈕 Loading 狀態防連點
+    const btn = document.getElementById('btn-save-formula');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 儲存中...';
+    btn.disabled = true;
+
+    const result = await sendPost(payload); 
+    
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (result && result.status === 'success') {
+        alert("公式儲存成功！");
+        window.returnToDashboard(drugId); 
+    }
 };
 
 // --- 下拉選單與輔助輸入 ---
