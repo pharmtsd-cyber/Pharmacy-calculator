@@ -19,8 +19,14 @@ const STORE = {
 window.sharedCalc = function(str, scope) {
     if (!str || String(str).trim() === '') return null;
     try {
-        // 正規化邏輯統一在此：x轉*，<>轉!=，所有括號轉小括號
-        let s = String(str).replace(/x/gi, '*').replace(/<>/g, '!=').replace(/\[/g, '(').replace(/\]/g, ')');
+        // 正規化邏輯統一在此：新增對 or 與 and 的支援 (注意空白，避免取代到變數名稱)
+        let s = String(str)
+            .replace(/x/gi, '*')
+            .replace(/<>/g, '!=')
+            .replace(/\[/g, '(')
+            .replace(/\]/g, ')')
+            .replace(/\s+or\s+/gi, ' || ')   // 將 or 自動轉換為 JavaScript 的 ||
+            .replace(/\s+and\s+/gi, ' && '); // 將 and 自動轉換為 JavaScript 的 &&
         
         // 變數替換 (依照傳入的 scope)
         for (let code in scope) {
