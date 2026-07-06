@@ -68,6 +68,7 @@ async function initializeCalculator() {
     try {
         // 直接使用 core.js 的極速快取引擎 (0.01 秒瞬間載入)
         await window.loadAllData();
+        renderDynamicNav();
         
         // 恢復前次瀏覽狀態
         const savedStateStr = localStorage.getItem('pharma_front_state');
@@ -133,20 +134,26 @@ function applyFilters() {
     const c1 = document.getElementById('filter-cat1').value;
     const formVal = document.getElementById('filter-form').value;
     const statusVal = document.getElementById('filter-status').value;
-    const k = document.getElementById('search-input').value.toLowerCase();
+    
+    // 模糊搜尋支援多欄位及多關鍵字 (包含代碼、中英文名、商品名)
+    const keywordString = document.getElementById('search-input').value.toLowerCase().trim();
+    const keywords = keywordString ? keywordString.split(/\s+/) : [];
 
     const filtered = STORE.drugs.filter(d => {
+        // 修正狀態篩選：ALL 為顯示全部
         const drugStatus = d.status ? d.status.toUpperCase() : 'N';
-        if (statusVal !== 'ALL' && drugStatus !== statusVal) return false;
+        if (statusVal && statusVal !== 'ALL' && drugStatus !== statusVal) return false;
         
         const drugDomain = d.domain || 'PED';
         if (currentDomain !== 'home' && drugDomain !== currentDomain) return false; 
+        
+        // 修復分類與劑型的篩選邏輯
         if (c1 && d.cat_1 !== c1) return false;
         if (formVal && d.form !== formVal) return false;
         
-        if (k) {
-            const searchStr = ((d.drug_code||'') + (d.local_name||'') + (d.generic_name||'') + (d.brand_name||'') + (d.common_brand||'')).toLowerCase();
-            if (!searchStr.includes(k)) return false;
+        if (keywords.length > 0) {
+            const searchStr = ((d.drug_code||'') + ' ' + (d.local_name||'') + ' ' + (d.generic_name||'') + ' ' + (d.brand_name||'') + ' ' + (d.common_brand||'')).toLowerCase();
+            if (!keywords.every(kw => searchStr.includes(kw))) return false;
         }
         return true;
     });
@@ -168,8 +175,14 @@ function renderDrugList(drugsToRender) {
         li.className = `p-3 rounded cursor-pointer transition shadow-sm border-2 ${isSelected ? '!bg-blue-200 !border-[#1B365D] !ring-2 !ring-blue-400' : 'bg-gray-50 hover:bg-blue-50 border-gray-200'}`;
         li.id = `drug-item-${drug.drug_id}`;
         
+        // 新增藥品卡片的狀態徽章
+        const statusBadge = drug.status === 'Y' 
+            ? `<span class="bg-green-100 text-green-700 border border-green-300 text-[10px] px-1.5 py-0.5 rounded font-bold">上線</span>` 
+            : `<span class="bg-red-100 text-red-700 border border-red-300 text-[10px] px-1.5 py-0.5 rounded font-bold">關檔</span>`;
+
         li.innerHTML = `
-            <div class="flex gap-1 mb-2 flex-wrap">
+            <div class="flex gap-1 mb-2 flex-wrap items-center">
+                ${statusBadge}
                 ${drug.cat_1 ? `<span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.cat_1}</span>` : ''}
                 ${drug.form ? `<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] px-1.5 py-0.5 rounded font-bold">${drug.form}</span>` : ''}
             </div>
@@ -550,3 +563,56 @@ window.saveCurrentState = function() {
 
 window.goToAdminEdit = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
 window.goToAdminFormula = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`; };
+
+// 新增動態導覽列生成邏輯
+function renderDynamicNav() {
+    const navContainer = document.getElementById('dynamic-nav-container');
+    if (!navContainer) return;
+
+    const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+    const domains = domainStr.split(',').map(d => {
+        const [code, name] = d.split(':');
+        return { code: code.trim(), name: (name || code).trim() };
+    });
+
+    let navHtml = `<button class="front-nav border-b-4 border-[#63B3ED] bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 whitespace-nowrap" data-target="home"><i class="fa-solid fa-house mr-1"></i> 首頁</button>`;
+    
+    domains.forEach(d => {
+        navHtml += `<button class="front-nav border-b-4 border-transparent px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 whitespace-nowrap" data-target="${d.code}">${d.name}</button>`;
+    });
+
+    navContainer.innerHTML = navHtml;
+
+    // 重新綁定事件
+    document.querySelectorAll('.front-nav').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.front-nav').forEach(n => {
+                n.classList.remove('border-[#63B3ED]', 'bg-white/10');
+                n.classList.add('border-transparent');
+            });
+            item.classList.remove('border-transparent');
+            item.classList.add('border-[#63B3ED]', 'bg-white/10');
+
+            const target = item.getAttribute('data-target');
+            currentDomain = target;
+
+            if(target === 'home') {
+                document.getElementById('home-view').classList.remove('hidden');
+                document.getElementById('calc-view').classList.add('hidden');
+            } else {
+                document.getElementById('home-view').classList.add('hidden');
+                document.getElementById('calc-view').classList.remove('hidden');
+                document.getElementById('calc-domain-title').innerText = item.innerText.trim();
+                
+                document.getElementById('search-input').value = '';
+                document.getElementById('filter-cat1').value = '';
+                document.getElementById('filter-form').value = '';
+                document.getElementById('filter-status').value = 'ALL';
+                
+                document.getElementById('calc-placeholder').classList.remove('hidden');
+                document.getElementById('calc-panel').classList.add('hidden');
+                applyFilters(); 
+            }
+        });
+    });
+}
