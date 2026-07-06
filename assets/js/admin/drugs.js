@@ -29,8 +29,18 @@ window.setupDrugListFilters = function() {
         forms.forEach(f => dfm.add(new Option(f, f)));
         dfm.addEventListener('change', renderDrugsList);
     }
+    // 💡【修復1】後台科別篩選器，改為動態讀取系統設定中的所有科別
+    if(dd) {
+        const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+        dd.innerHTML = '<option value="">-- 所有科別 --</option>';
+        const domains = domainStr.split(',').map(d => {
+            const [code, name] = d.split(':');
+            return { code: code ? code.trim() : '', name: name ? name.trim() : (code ? code.trim() : '') };
+        }).filter(d => d.code);
+        domains.forEach(d => dd.add(new Option(d.name, d.code)));
+        dd.addEventListener('change', renderDrugsList);
+    }
     if(dst) dst.addEventListener('change', renderDrugsList);
-    if(dd) dd.addEventListener('change', renderDrugsList);
     if(df) df.addEventListener('input', window.debounce(renderDrugsList, 300));
 };
 
@@ -46,11 +56,20 @@ window.renderDrugsList = function() {
     
     const dashKeywords = fText ? fText.split(/\s+/) : [];
 
+    // 💡【新增】解析當前的科別設定字典，供下方表格動態顯示科別名稱使用
+    const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+    const domainMap = {};
+    domainStr.split(',').forEach(d => {
+        const [code, name] = d.split(':');
+        if(code) domainMap[code.trim()] = name ? name.trim() : code.trim();
+    });
+
     const dashDrugs = STORE.drugs.filter(d => {
-        if (fd && (d.domain || 'PED') !== fd) return false;
-        if (fc1 && d.cat_1 !== fc1) return false;
-        if (ffm && d.form !== ffm) return false;
-        if (fst && (d.status || 'N') !== fst) return false;
+        // 💡【修復2】加入 !== 'ALL' 判斷，確保選擇「顯示全部」時能正確跳過篩選
+        if (fd && fd !== 'ALL' && (d.domain || 'PED') !== fd) return false;
+        if (fc1 && fc1 !== 'ALL' && d.cat_1 !== fc1) return false;
+        if (ffm && ffm !== 'ALL' && d.form !== ffm) return false;
+        if (fst && fst !== 'ALL' && (d.status || 'N') !== fst) return false;
         if (dashKeywords.length > 0) {
             const searchStr = `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''} ${d.cat_1||''}`.toLowerCase();
             if (!dashKeywords.every(kw => searchStr.includes(kw))) return false;
@@ -62,16 +81,18 @@ window.renderDrugsList = function() {
     
     dashList.innerHTML = dashDrugs.map(d => {
         const dom = d.domain || 'PED';
-        let domText = dom === 'NICU' ? '新生兒 ICU' : (dom === 'ADU' ? '成人抗生素' : '小兒科');
-        let domColor = dom === 'NICU' ? 'bg-pink-100 text-pink-800' : (dom === 'ADU' ? 'bg-gray-200 text-gray-800' : 'bg-blue-100 text-blue-800');
+        // 💡【修復3】動態配對科別名稱與顏色 (不再寫死)
+        let domText = domainMap[dom] || dom;
+        let domColor = dom === 'NICU' ? 'bg-pink-100 text-pink-800' : 
+                       (dom === 'ADU' ? 'bg-gray-200 text-gray-800' : 
+                       (dom === 'TOOL' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800'));
         
         const statusHtml = d.status === 'Y' 
             ? `<button onclick="toggleDrugStatus('${d.drug_id}', 'Y', event)" class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-green-200 border border-green-300">上線中</button>`
             : `<button onclick="toggleDrugStatus('${d.drug_id}', 'N', event)" class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold hover:bg-red-200 border border-red-300">未上線</button>`;
 
-        // 【新增】在 tr 標籤加入 id="dash-row-..." 與 duration-500 漸變動畫設定
         return `<tr id="dash-row-${d.drug_id}" class="hover:bg-blue-50 transition duration-500">
-            <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold">${domText}</span></td>
+            <td class="pt-3"><span class="${domColor} text-[10px] px-2 py-0.5 rounded font-bold whitespace-nowrap">${domText}</span></td>
             <td class="pt-3">
                 <div class="font-bold text-orange-600 mb-1">${d.drug_code||'--'}</div>
                 <div class="flex gap-1 flex-wrap">
