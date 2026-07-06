@@ -101,9 +101,14 @@
             <section class="w-full md:w-2/3 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col h-full overflow-y-auto">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2 pb-2 border-b border-gray-300">
                     
-                    <h2 class="text-xl font-bold text-[#1B365D] flex items-center">
-                        <i class="fa-solid fa-calculator mr-2 text-blue-500"></i> 劑量計算主機
-                    </h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-bold text-[#1B365D] flex items-center">
+                            <i class="fa-solid fa-calculator mr-2 text-blue-500"></i> 劑量計算主機
+                        </h2>
+                        <button onclick="document.getElementById('search-input').scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => document.getElementById('search-input').focus(), 300);" class="md:hidden bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold shadow-sm border border-blue-200 active:bg-blue-200 transition">
+                            <i class="fa-solid fa-arrow-up"></i> 換藥品
+                        </button>
+                    </div>
                     
                     <div id="tool-toolbox-container" class="flex gap-2 items-center hidden">
                         <select id="tool-selector" class="border border-orange-300 rounded px-2 py-1.5 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 text-orange-900 font-bold max-w-[150px] truncate shadow-sm">
