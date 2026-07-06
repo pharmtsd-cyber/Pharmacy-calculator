@@ -174,19 +174,37 @@ window.setupFormulaDrugDropdown = function() {
     const drop = document.getElementById('drop-formulaDrug');
     if(!input || !drop) return;
 
+    // 【新增防呆】為了避免重複綁定事件導致效能變差，先複製一個乾淨的 input 替換掉舊的
+    const newInput = input.cloneNode(true); 
+    input.parentNode.replaceChild(newInput, input);
+    const finalInput = document.getElementById('input-formulaDrug');
+
     const updateDrop = () => {
-        const keyword = input.value.toLowerCase().trim();
+        const keyword = finalInput.value.toLowerCase().trim();
         const filtered = STORE.drugs.filter(item => 
             `${item.drug_code||''} ${item.local_name||''} ${item.generic_name||''}`.toLowerCase().includes(keyword)
         );
-        drop.innerHTML = filtered.map(item => `
-            <div class="p-2 text-sm hover:bg-purple-50 cursor-pointer border-b" onclick="document.getElementById('formula-drug-id-hidden').value='${item.drug_id}'; window.renderFormulaDrugTag('${item.drug_id}'); document.getElementById('drop-formulaDrug').classList.add('hidden');">
-                ${item.drug_code} ${item.generic_name}
-            </div>`).join('');
+        
+        if (filtered.length === 0) {
+            drop.innerHTML = '<div class="p-2 text-xs text-gray-500 text-center">找不到符合的藥品</div>';
+        } else {
+            drop.innerHTML = filtered.map(item => `
+                <div class="p-2 text-sm hover:bg-purple-50 cursor-pointer border-b" onclick="document.getElementById('formula-drug-id-hidden').value='${item.drug_id}'; window.renderFormulaDrugTag('${item.drug_id}'); document.getElementById('drop-formulaDrug').classList.add('hidden');">
+                    ${item.drug_code} ${item.generic_name}
+                </div>`).join('');
+        }
         drop.classList.remove('hidden');
     };
-    input.addEventListener('focus', updateDrop);
-    input.addEventListener('input', window.debounce(updateDrop, 300));
+    
+    finalInput.addEventListener('focus', updateDrop);
+    finalInput.addEventListener('input', window.debounce(updateDrop, 300));
+    
+    // 💡【核心修復】點擊畫面空白處或其他地方時，自動隱藏下拉選單
+    document.addEventListener('click', (e) => { 
+        if (!finalInput.contains(e.target) && !drop.contains(e.target)) {
+            drop.classList.add('hidden'); 
+        }
+    });
 };
 
 window.renderAdminParamPad = function() {
