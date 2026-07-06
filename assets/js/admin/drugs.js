@@ -436,3 +436,33 @@ window.setupDrugDropdowns = function() {
     finalInput.addEventListener('input', window.debounce(updateDrop, 300));
     document.addEventListener('click', (e) => { if (!finalInput.contains(e.target) && !finalDrop.contains(e.target)) finalDrop.classList.add('hidden'); });
 };
+
+// 💡【全新動態功能】依據後台系統設定的科別名稱，動態生成新增藥品頁面的所屬科別下拉選單
+window.setupDrugDomainSelect = function() {
+    const domainSelect = document.getElementById('drug-domain');
+    if (!domainSelect) return;
+
+    // 讀取系統維護中的最新科別設定
+    const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+    
+    // 記住使用者當前選取的數值，避免被重新渲染清空
+    const currentSelectedValue = domainSelect.value;
+
+    domainSelect.innerHTML = ''; // 清空原本寫死的選項
+
+    const domains = domainStr.split(',').map(d => {
+        const [code, name] = d.split(':');
+        return { code: code ? code.trim() : '', name: name ? name.trim() : (code ? code.trim() : '') };
+    }).filter(d => d.code);
+
+    // 動態填入新選項
+    domains.forEach(d => {
+        const opt = new Option(d.name, d.code);
+        domainSelect.add(opt);
+    });
+
+    // 還原原本選取的數值
+    if (currentSelectedValue && [...domainSelect.options].some(o => o.value === currentSelectedValue)) {
+        domainSelect.value = currentSelectedValue;
+    }
+};
