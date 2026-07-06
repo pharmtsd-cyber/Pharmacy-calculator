@@ -667,6 +667,9 @@ window.setupToolDropdown = function() {
     selector.innerHTML = tools.map(t => `<option value="${t.drug_id}">${t.local_name || t.generic_name}</option>`).join('');
 };
 
+// 💡 新增：用來記憶計算機輸入過數值的快取
+window.toolInputCache = {}; 
+
 window.openToolModal = function() {
     const selector = document.getElementById('tool-selector');
     if (!selector || !selector.value) return;
@@ -677,11 +680,9 @@ window.openToolModal = function() {
     
     document.getElementById('tool-modal-title').innerText = toolDrug.local_name || toolDrug.generic_name;
     
-    // 抓取該工具下的「所有公式」
     const formulas = STORE.formulas.filter(f => String(f.drug_id) === String(toolId) || (toolDrug.drug_code && String(f.drug_id) === String(toolDrug.drug_code)));
     window.currentToolFormulas = formulas;
     
-    // 解析所有公式，統整需要輸入的參數 (排除 min/max)
     const requiredCodes = new Set();
     const paramRegex = /{([a-zA-Z0-9_]+)}/g;
     
@@ -700,7 +701,6 @@ window.openToolModal = function() {
     if (requiredCodes.size === 0) {
         paramContainer.innerHTML = '<div class="col-span-full text-sm text-gray-500 italic">此工具不需要輸入任何參數，請直接看下方結果。</div>';
     } else {
-        // 💡 連動主畫面 Step 2：抓取已經輸入過的數值
         const mainInputs = document.querySelectorAll('#dynamic-parameters .param-input');
         const currentMainValues = {};
         mainInputs.forEach(input => {
@@ -715,8 +715,11 @@ window.openToolModal = function() {
             const paramType = paramDef ? paramDef.param_type : 'INPUT';
             const paramOptionsStr = paramDef ? paramDef.param_options : '';
             
-            // 將主畫面已輸入的數值設為預設值
-            const prefillValue = currentMainValues[code] !== undefined ? currentMainValues[code] : '';
+            // 💡 邏輯修改：優先讀取「記憶快取」，如果有值就用記憶的；如果沒有才去抓主畫面的參數預設值
+            const prefillValue = (window.toolInputCache[code] !== undefined && window.toolInputCache[code] !== '') 
+                                 ? window.toolInputCache[code] 
+                                 : (currentMainValues[code] !== undefined ? currentMainValues[code] : '');
+            
             const div = document.createElement('div');
             div.className = 'flex flex-col gap-1';
             
@@ -745,25 +748,26 @@ window.openToolModal = function() {
         });
     }
     
-    // 綁定事件：彈窗內參數修改時，即時重算所有結果
     document.querySelectorAll('.tool-param-input').forEach(input => {
         input.addEventListener('change', window.executeToolCalculation);
         input.addEventListener('input', window.debounce(window.executeToolCalculation, 100));
     });
     
     document.getElementById('tool-modal').classList.remove('hidden');
-    window.executeToolCalculation(); // 打開時立刻計算第一次
+    window.executeToolCalculation(); 
 };
 
 window.executeToolCalculation = function() {
     if (!window.currentToolFormulas || window.currentToolFormulas.length === 0) return;
     
-    // 收集彈窗內的使用者輸入
     const scopeVals = {};
     let allFilled = true;
     document.querySelectorAll('.tool-param-input').forEach(input => {
         if(input.value === '') allFilled = false;
         scopeVals[input.getAttribute('data-code')] = parseFloat(input.value) || 0;
+        
+        // 💡 新增：每次使用者輸入或變更時，即時將數值存入記憶快取
+        window.toolInputCache[input.getAttribute('data-code')] = input.value;
     });
     
     const resultsContainer = document.getElementById('tool-results-container');
@@ -774,7 +778,6 @@ window.executeToolCalculation = function() {
         return;
     }
     
-    // 迴圈執行這項工具的「所有公式」
     window.currentToolFormulas.forEach(f => {
         let calcMin = window.sharedCalc(f.formula_min, scopeVals);
         let calcMax = window.sharedCalc(f.formula_max, scopeVals);
@@ -797,4 +800,14 @@ window.executeToolCalculation = function() {
         `;
         resultsContainer.appendChild(card);
     });
+};
+
+// 💡 全新功能：一鍵清空所有計算機輸入，並移除記憶快取
+window.clearToolInputs = function() {
+    document.querySelectorAll('.tool-param-input').forEach(input => {
+        input.value = '';
+        delete window.toolInputCache[input.getAttribute('data-code')];
+    });
+    // 觸發重新計算 (因為變成空值，會自動顯示「請填寫所有參數」的提示文字)
+    window.executeToolCalculation();
 };
