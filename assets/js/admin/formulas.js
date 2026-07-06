@@ -256,32 +256,50 @@ window.openTemplateModal = function() {
 
 window.renderTemplateList = function(keyword) {
     const list = document.getElementById('list-template-formulas');
+    if (!list) return;
+
     const kw = keyword.toLowerCase().trim();
+    // 支援空白分隔的多關鍵字模糊搜尋
+    const keywords = kw ? kw.split(/\s+/) : [];
     
-    // 篩選出符合關鍵字的公式
+    // 💡【核心修復 1】連動藥品基本檔，支援藥品代碼、中英文名稱、商品名等多欄位比對
     const filtered = STORE.formulas.filter(f => {
-        if (!kw) return true;
-        const searchStr = `${f.formula_name} ${f.drug_id}`.toLowerCase();
-        return searchStr.includes(kw);
+        if (keywords.length === 0) return true;
+        
+        // 尋找該公式對應的藥品基本檔資料
+        const d = STORE.drugs.find(x => String(x.drug_id) === String(f.drug_id) || (x.drug_code && String(x.drug_code) === String(f.drug_id)));
+        
+        // 串接公式名稱以及藥品的所有關鍵字欄位作為比對字串
+        const searchStr = `${f.formula_name} ${d ? `${d.drug_code||''} ${d.local_name||''} ${d.generic_name||''} ${d.brand_name||''} ${d.common_brand||''}` : ''}`.toLowerCase();
+        
+        // 必須符合所有拆開的關鍵字
+        return keywords.every(kw => searchStr.includes(kw));
     });
 
     if (filtered.length === 0) {
-        list.innerHTML = `<tr><td class="text-center py-4 text-gray-400">找不到相符的公式</td></tr>`;
+        list.innerHTML = `<tr><td class="text-center py-6 text-gray-400 italic text-sm">找不到相符的計算公式範本</td></tr>`;
         return;
     }
 
-    // 渲染清單，並找出對應的藥品名稱讓您好辨識
+    // 💡【核心修復 2】移除右側按鈕的 <td> 欄位，優化整行點擊的視覺呈現與藥品資訊顯示
     list.innerHTML = filtered.map(f => {
-        const d = STORE.drugs.find(x => String(x.drug_id) === String(f.drug_id));
-        const drugDisplay = d ? `<span class="text-orange-600">${d.drug_code||''}</span> ${d.generic_name||''}` : `<span class="text-gray-400">未知藥品 ID: ${f.drug_id}</span>`;
+        const d = STORE.drugs.find(x => String(x.drug_id) === String(f.drug_id) || (x.drug_code && String(x.drug_code) === String(f.drug_id)));
         
-        return `<tr class="hover:bg-orange-50 cursor-pointer transition border-b border-gray-100" onclick="window.applyTemplate('${f.formula_id}')">
+        let drugDisplay = `<span class="text-gray-400 italic">未知藥品 (ID: ${f.drug_id})</span>`;
+        if (d) {
+            drugDisplay = `<span class="text-orange-600 font-bold">[${d.drug_code||'--'}]</span> 
+                           <span class="text-blue-900 font-bold">${d.generic_name||'無學名'}</span> 
+                           ${d.local_name ? `<span class="text-gray-500 text-xs">(${d.local_name})</span>` : ''}`;
+        }
+        
+        return `<tr class="hover:bg-orange-50/60 cursor-pointer transition border-b border-gray-100" onclick="window.applyTemplate('${f.formula_id}')">
             <td class="p-3">
-                <div class="font-bold text-blue-900 text-sm mb-1"><i class="fa-solid fa-calculator text-gray-400 mr-1"></i> ${f.formula_name}</div>
-                <div class="text-[11px] text-gray-500 font-bold">來源: ${drugDisplay}</div>
-            </td>
-            <td class="p-3 text-right w-24 align-middle">
-                <span class="text-xs bg-orange-500 hover:bg-orange-600 text-white shadow-sm px-3 py-1.5 rounded font-bold">套用此公式</span>
+                <div class="font-bold text-purple-900 text-sm mb-1.5">
+                    <i class="fa-solid fa-calculator text-purple-400 mr-1"></i> ${f.formula_name}
+                </div>
+                <div class="text-[11px] text-gray-600 flex items-center gap-1">
+                    <span class="font-bold text-gray-400">來源藥品:</span> ${drugDisplay}
+                </div>
             </td>
         </tr>`;
     }).join('');
