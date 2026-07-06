@@ -859,3 +859,64 @@ window.backToMobileList = function() {
         rightCalc.classList.remove('flex');
     }
 };
+
+// ==========================================
+// 渲染首頁 (使用規則與系統公告)
+// ==========================================
+window.renderHomePage = function() {
+    // 1. 渲染系統使用規則
+    const rulesContainer = document.getElementById('home-rules');
+    if (rulesContainer) {
+        rulesContainer.innerText = STORE.settings.usage_rules || '尚未設定系統使用規則。';
+    }
+
+    // 2. 渲染系統公告 (區分置頂與一般)
+    const annoContainer = document.getElementById('home-announcements');
+    if (!annoContainer) return;
+
+    if (!STORE.announcements || STORE.announcements.length === 0) {
+        annoContainer.innerHTML = '<div class="text-gray-400 text-sm italic text-center py-4">目前無系統公告</div>';
+        return;
+    }
+
+    // 💡 排序邏輯：置頂優先 (Y)，接著依日期由新到舊排序
+    const sortedAnnos = [...STORE.announcements].sort((a, b) => {
+        if (a.is_pinned === 'Y' && b.is_pinned !== 'Y') return -1;
+        if (a.is_pinned !== 'Y' && b.is_pinned === 'Y') return 1;
+        const dA = a.date ? new Date(a.date).getTime() : 0;
+        const dB = b.date ? new Date(b.date).getTime() : 0;
+        return dB - dA;
+    });
+
+    annoContainer.innerHTML = sortedAnnos.map(anno => {
+        const isPinned = anno.is_pinned === 'Y';
+        // 處理日期格式 (去掉後面的時間)
+        const dateStr = anno.date ? new Date(anno.date).toISOString().split('T')[0] : '';
+        const versionBadge = anno.version ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${isPinned ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-600'}">${anno.version}</span>` : '';
+        
+        if (isPinned) {
+            // 📌 置頂公告視覺：醒目的暖黃色卡片
+            return `
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
+                    <div class="flex justify-between items-center mb-1 pl-1">
+                        <span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1"><i class="fa-solid fa-thumbtack"></i> 重要置頂</span>
+                        <span class="text-xs text-amber-700 font-bold">${dateStr} ${versionBadge}</span>
+                    </div>
+                    <div class="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed mt-2 pl-1">${anno.content || ''}</div>
+                </div>
+            `;
+        } else {
+            // 📝 一般公告視覺：乾淨的淺灰底卡片
+            return `
+                <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm">
+                    <div class="flex justify-between items-center mb-1 border-b border-gray-100 pb-1">
+                        <span class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar-check mr-1 text-gray-400"></i> ${dateStr}</span>
+                        ${versionBadge}
+                    </div>
+                    <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mt-1">${anno.content || ''}</div>
+                </div>
+            `;
+        }
+    }).join('');
+};
