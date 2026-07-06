@@ -66,8 +66,13 @@ window.toggleAccordion = function(contentId, btnElement) {
 async function initializeCalculator() {
     const loadingStatus = document.getElementById('loading-status');
     try {
-        // 直接使用 core.js 的極速快取引擎 (0.01 秒瞬間載入)
+        // 使用 core.js 的極速快取引擎載入資料
         await window.loadAllData();
+        
+        // 💡【核心修復】載入資料後，立刻初始化篩選器的下拉選項與事件綁定
+        setupFilters();
+        
+        // 💡【核心修復】動態渲染直向導覽列
         renderDynamicNav();
         
         // 恢復前次瀏覽狀態
@@ -80,7 +85,6 @@ async function initializeCalculator() {
                     if (tab) tab.click(); 
                 }
                 if (savedState && savedState.drugId) {
-                    // 等待 UI 渲染完畢後自動選取藥品
                     setTimeout(() => {
                         const d = STORE.drugs.find(x => String(x.drug_id) === String(savedState.drugId));
                         if (d) selectDrug(d);
@@ -118,16 +122,24 @@ function setupFilters() {
     const statusSelect = document.getElementById('filter-status');
     const searchInput = document.getElementById('search-input');
     
+    if (!cat1Select || !formSelect) return;
+
+    // 💡【動態防刷】先清空舊選項，避免重複疊加
+    cat1Select.innerHTML = '<option value="">-- 所有分類 --</option>';
     const cat1s = [...new Set(STORE.categories.map(c => c.cat_1).filter(Boolean))];
     cat1s.forEach(c => cat1Select.add(new Option(c, c)));
 
+    formSelect.innerHTML = '<option value="">-- 所有劑型 --</option>';
     const forms = [...new Set(STORE.drugs.map(d => d.form).filter(Boolean))].sort();
     forms.forEach(f => formSelect.add(new Option(f, f)));
 
-    cat1Select.addEventListener('change', applyFilters);
-    formSelect.addEventListener('change', applyFilters);
-    statusSelect.addEventListener('change', applyFilters);
-    searchInput.addEventListener('input', window.debounce(applyFilters, 300));
+    // 💡【精準綁定】確保變更選擇時能即時觸發過濾條件
+    cat1Select.onchange = applyFilters;
+    formSelect.onchange = applyFilters;
+    if (statusSelect) statusSelect.onchange = applyFilters;
+    if (searchInput) {
+        searchInput.oninput = window.debounce(applyFilters, 300);
+    }
 }
 
 function applyFilters() {
@@ -564,26 +576,28 @@ window.saveCurrentState = function() {
 window.goToAdminEdit = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?drug_id=${currentDrug.drug_id}`; };
 window.goToAdminFormula = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`; };
 
-// 新增動態導覽列生成邏輯
+
 function renderDynamicNav() {
     const navContainer = document.getElementById('dynamic-nav-container');
     if (!navContainer) return;
 
+    // 讀取系統設定中的科別配置
     const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
     const domains = domainStr.split(',').map(d => {
         const [code, name] = d.split(':');
-        return { code: code.trim(), name: (name || code).trim() };
-    });
+        return { code: code ? code.trim() : '', name: name ? name.trim() : (code ? code.trim() : '') };
+    }).filter(d => d.code);
 
-    let navHtml = `<button class="front-nav border-b-4 border-[#63B3ED] bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 whitespace-nowrap" data-target="home"><i class="fa-solid fa-house mr-1"></i> 首頁</button>`;
+    // 💡【直向優化】移除橫向排版類別，統一按鈕版面樣式
+    let navHtml = `<button class="front-nav w-full text-left border-l-4 border-[#63B3ED] bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20" data-target="home"><i class="fa-solid fa-house mr-2"></i>首頁</button>`;
     
     domains.forEach(d => {
-        navHtml += `<button class="front-nav border-b-4 border-transparent px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20 whitespace-nowrap" data-target="${d.code}">${d.name}</button>`;
+        navHtml += `<button class="front-nav w-full text-left border-l-4 border-transparent px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20" data-target="${d.code}"><i class="fa-solid fa-prescription-bottle-medical mr-2"></i>${d.name}</button>`;
     });
 
     navContainer.innerHTML = navHtml;
 
-    // 重新綁定事件
+    // 重新綁定直向選單的點擊切換事件
     document.querySelectorAll('.front-nav').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.front-nav').forEach(n => {
@@ -604,10 +618,11 @@ function renderDynamicNav() {
                 document.getElementById('calc-view').classList.remove('hidden');
                 document.getElementById('calc-domain-title').innerText = item.innerText.trim();
                 
+                // 切換科別時重置篩選狀態至預設值
                 document.getElementById('search-input').value = '';
-                document.getElementById('filter-cat1').value = '';
-                document.getElementById('filter-form').value = '';
-                document.getElementById('filter-status').value = 'ALL';
+                if(document.getElementById('filter-cat1')) document.getElementById('filter-cat1').value = '';
+                if(document.getElementById('filter-form')) document.getElementById('filter-form').value = '';
+                if(document.getElementById('filter-status')) document.getElementById('filter-status').value = 'ALL';
                 
                 document.getElementById('calc-placeholder').classList.remove('hidden');
                 document.getElementById('calc-panel').classList.add('hidden');
