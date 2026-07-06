@@ -66,14 +66,22 @@ window.toggleAccordion = function(contentId, btnElement) {
 async function initializeCalculator() {
     const loadingStatus = document.getElementById('loading-status');
     try {
-        // 使用 core.js 的極速快取引擎載入資料
+        // 💡【極速優化】不需要等 loadAllData，網頁一打開立刻先從本機快取渲染科別選單
+        const cachedDomains = localStorage.getItem('PHARMA_DOMAINS_CACHE');
+        if (cachedDomains) {
+            renderDynamicNav(cachedDomains);
+        }
+
+        // 背景靜默下載/更新最新的雲端資料
         await window.loadAllData();
         
-        // 💡【核心修復】載入資料後，立刻初始化篩選器的下拉選項與事件綁定
+        // 雲端資料回來後，再刷一次最新的科別設定並存入快取
+        const latestDomains = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+        localStorage.setItem('PHARMA_DOMAINS_CACHE', latestDomains);
+        renderDynamicNav(latestDomains);
+
+        // 初始化篩選器
         setupFilters();
-        
-        // 💡【核心修復】動態渲染直向導覽列
-        renderDynamicNav();
         
         // 恢復前次瀏覽狀態
         const savedStateStr = localStorage.getItem('pharma_front_state');
@@ -577,18 +585,16 @@ window.goToAdminEdit = function() { if(!currentDrug) return; saveCurrentState();
 window.goToAdminFormula = function() { if(!currentDrug) return; saveCurrentState(); window.location.href = `./admin.html?action=formula_view&drug_id=${currentDrug.drug_id}`; };
 
 
-function renderDynamicNav() {
+function renderDynamicNav(domainStr) {
     const navContainer = document.getElementById('dynamic-nav-container');
     if (!navContainer) return;
 
-    // 讀取系統設定中的科別配置
-    const domainStr = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
-    const domains = domainStr.split(',').map(d => {
+    const targetDomainStr = domainStr || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
+    const domains = targetDomainStr.split(',').map(d => {
         const [code, name] = d.split(':');
         return { code: code ? code.trim() : '', name: name ? name.trim() : (code ? code.trim() : '') };
     }).filter(d => d.code);
 
-    // 💡【直向優化】移除橫向排版類別，統一按鈕版面樣式
     let navHtml = `<button class="front-nav w-full text-left border-l-4 border-[#63B3ED] bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/20" data-target="home"><i class="fa-solid fa-house mr-2"></i>首頁</button>`;
     
     domains.forEach(d => {
@@ -618,7 +624,6 @@ function renderDynamicNav() {
                 document.getElementById('calc-view').classList.remove('hidden');
                 document.getElementById('calc-domain-title').innerText = item.innerText.trim();
                 
-                // 切換科別時重置篩選狀態至預設值
                 document.getElementById('search-input').value = '';
                 if(document.getElementById('filter-cat1')) document.getElementById('filter-cat1').value = '';
                 if(document.getElementById('filter-form')) document.getElementById('filter-form').value = '';
@@ -630,4 +635,13 @@ function renderDynamicNav() {
             }
         });
     });
+
+    // 💡 保持當前已被選取科別的高亮狀態
+    if (typeof currentDomain !== 'undefined' && currentDomain) {
+        const activeTab = document.querySelector(`.front-nav[data-target="${currentDomain}"]`);
+        if (activeTab) {
+            document.querySelectorAll('.front-nav').forEach(n => n.classList.remove('border-[#63B3ED]', 'bg-white/10'));
+            activeTab.classList.add('border-[#63B3ED]', 'bg-white/10');
+        }
+    }
 }
