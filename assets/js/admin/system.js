@@ -61,11 +61,35 @@ window.renderSystemLists = function() {
         document.getElementById('set-owner').value = STORE.settings.owner || '';
         document.getElementById('set-copyright').value = STORE.settings.copyright || '';
         document.getElementById('set-rules').value = STORE.settings.usage_rules || '';
+        // 新增這行，讓畫面能讀取到設定
+        if(document.getElementById('set-domains')) document.getElementById('set-domains').value = STORE.settings.domain_settings || 'PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素';
     }
 };
 
 window.updateFeedbackStatus = async function(id, status) { await sendPost({ action: 'saveFeedback', mode: 'edit', feedback_id: id, status: status }); };
-window.saveSettings = async function() { await sendPost({ action: 'saveSettings', settings: { welcome_title: document.getElementById('set-welcome').value, owner: document.getElementById('set-owner').value, copyright: document.getElementById('set-copyright').value, usage_rules: document.getElementById('set-rules').value } }); };
+window.saveSettings = async function() { 
+    const btn = document.getElementById('btn-save-settings');
+    if (btn) { btn.innerText = '儲存中...'; btn.disabled = true; }
+
+    const res = await sendPost({ 
+        action: 'saveSettings', 
+        settings: { 
+            welcome_title: document.getElementById('set-welcome').value, 
+            owner: document.getElementById('set-owner').value, 
+            copyright: document.getElementById('set-copyright').value, 
+            usage_rules: document.getElementById('set-rules').value,
+            // 新增動態科別的儲存
+            domain_settings: document.getElementById('set-domains') ? document.getElementById('set-domains').value : ''
+        } 
+    }); 
+
+    if (btn) { btn.innerText = '儲存首頁與系統設定'; btn.disabled = false; }
+    
+    // 儲存成功的提示視窗
+    if (res && res.status === 'success') {
+        alert("首頁與系統設定已成功更新！");
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     const bind = (id, fn) => { if(document.getElementById(id)) document.getElementById(id).onclick = fn; };
