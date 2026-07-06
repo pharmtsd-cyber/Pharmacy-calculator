@@ -265,6 +265,25 @@
         </div>
         </div>
     </div>
+
+    <script>
+        // 1. 阻擋雙指捏合放大 (Pinch-to-zoom)
+        document.addEventListener('touchstart', function(event) {
+            if (event.touches.length > 1) {
+                event.preventDefault(); 
+            }
+        }, { passive: false });
+        
+        // 2. 阻擋連點兩下放大 (Double-tap-to-zoom)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            let now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault(); 
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+    </script>
     
     <script src="./assets/js/config.js"></script>
     <script src="./assets/js/api.js"></script>
