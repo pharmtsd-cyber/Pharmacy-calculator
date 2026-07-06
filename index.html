@@ -236,9 +236,10 @@
                 </div>
             </div>
             
-            <div class="bg-gray-100 px-4 py-3 border-t border-gray-200 text-right">
-                <button type="button" onclick="document.getElementById('tool-modal').classList.add('hidden')" class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded shadow text-sm font-bold transition">關閉視窗</button>
-            </div>
+        <div class="bg-gray-100 px-4 py-3 border-t border-gray-200 flex justify-between items-center">
+            <button type="button" onclick="window.clearToolInputs()" class="text-red-500 hover:text-red-700 font-bold text-sm px-2 transition"><i class="fa-solid fa-trash-can mr-1"></i>清空內容</button>
+            <button type="button" onclick="document.getElementById('tool-modal').classList.add('hidden')" class="bg-gray-500 hover:bg-gray-600 text-white px-5 py-2 rounded shadow text-sm font-bold transition">關閉視窗</button>
+        </div>
         </div>
     </div>
     
