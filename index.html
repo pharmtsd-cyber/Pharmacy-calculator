@@ -12,11 +12,16 @@
 </head>
 <body class="flex h-screen bg-gray-50 overflow-hidden font-sans">
 
-    <aside class="w-64 bg-[#1B365D] text-white flex flex-col flex-shrink-0 shadow-xl z-20 relative">
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden md:hidden transition-opacity backdrop-blur-sm" onclick="window.toggleSidebar()"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-[#1B365D] text-white flex flex-col flex-shrink-0 shadow-xl z-40">
         <div class="p-5 border-b border-white/20">
-            <div class="flex items-center gap-3 mb-2">
-                <img src="https://github.com/pharmtsd-cyber/Pharmacy-calculator/blob/main/logo_White.png?raw=true" class="w-7 h-7 mr-2 object-contain" alt="LOGO">
-                <div><h1 class="text-lg font-bold tracking-wide leading-tight">亞東醫院藥學部</h1></div>
+            <div class="flex items-center justify-between gap-3 mb-2">
+                <div class="flex items-center gap-3">
+                    <img src="https://github.com/pharmtsd-cyber/Pharmacy-calculator/blob/main/logo_White.png?raw=true" class="w-7 h-7 mr-2 object-contain" alt="LOGO">
+                    <div><h1 class="text-lg font-bold tracking-wide leading-tight">亞東醫院藥學部</h1></div>
+                </div>
+                <button onclick="window.toggleSidebar()" class="md:hidden text-blue-200 hover:text-white text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <p class="text-[11px] text-blue-200">臨床藥品劑量建議計算機</p>
             <span id="version-badge" class="inline-block mt-2 bg-blue-800 text-blue-100 text-[10px] px-2 py-0.5 rounded-full font-medium">載入中...</span>
@@ -35,7 +40,16 @@
         </div>
     </aside>
 
-    <main class="flex-grow flex flex-col h-screen overflow-hidden relative bg-gray-50">
+    <main class="flex-grow flex flex-col h-screen overflow-hidden relative bg-gray-50 w-full">
+        
+        <div class="md:hidden bg-[#1B365D] text-white p-3 flex justify-between items-center shadow-md shrink-0 z-20">
+            <div class="font-bold flex items-center text-sm">
+                <img src="https://github.com/pharmtsd-cyber/Pharmacy-calculator/blob/main/logo_White.png?raw=true" class="w-6 h-6 mr-2 object-contain" alt="LOGO"> 劑量建議計算機
+            </div>
+            <button onclick="window.toggleSidebar()" class="text-white hover:text-blue-200 px-3 py-1 rounded border border-white/20 shadow-sm transition active:bg-blue-800 flex items-center gap-1">
+                <i class="fa-solid fa-bars"></i> 選單
+            </button>
+        </div>
         
         <div id="home-view" class="view-section active w-full h-full overflow-y-auto p-6 md:p-10">
             <div class="max-w-4xl mx-auto flex flex-col gap-6">
