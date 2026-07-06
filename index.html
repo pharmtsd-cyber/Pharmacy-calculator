@@ -21,22 +21,8 @@
             <span id="version-badge" class="inline-block mt-2 bg-blue-800 text-blue-100 text-[10px] px-2 py-0.5 rounded-full font-medium">載入中...</span>
         </div>
         
-        <nav class="flex-grow py-4 overflow-y-auto">
-            <ul class="flex flex-col gap-1">
-                <li class="front-nav active px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3 border-l-4 border-[#63B3ED] bg-white/10 transition" data-target="home">
-                    <i class="fa-solid fa-house w-5 text-center"></i> 系統首頁與公告
-                </li>
-                <li class="front-nav px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3 border-l-4 border-transparent transition" data-target="NICU">
-                    <i class="fa-solid fa-baby w-5 text-center"></i> 新生兒 ICU
-                </li>
-                <li class="front-nav px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3 border-l-4 border-transparent transition" data-target="PED">
-                    <i class="fa-solid fa-child w-5 text-center"></i> 小兒科
-                </li>
-                <li class="front-nav px-5 py-3 cursor-pointer hover:bg-white/10 flex items-center gap-3 border-l-4 border-transparent transition" data-target="ADU">
-                    <i class="fa-solid fa-person w-5 text-center"></i> 成人抗生素
-                </li>
-            </ul>
-        </nav>
+        <nav class="bg-[#1B365D] shadow-md overflow-x-auto flex flex-nowrap hide-scrollbar" id="dynamic-nav-container">
+             </nav>
         
         <div class="p-4 border-t border-white/20 flex flex-col gap-2">
             <button onclick="window.openFeedbackModal('一般系統建議')" class="w-full text-sm bg-blue-700 hover:bg-blue-600 py-2 rounded transition flex justify-center items-center gap-2">
@@ -85,9 +71,9 @@
                         <select id="filter-cat1" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white"><option value="">-- 所有分類 --</option></select>
                         <select id="filter-form" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white"><option value="">-- 所有劑型 --</option></select>
                         <select id="filter-status" class="w-full border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-[#1B365D] bg-white">
-                            <option value="Y" selected>僅顯示上線藥品</option>
-                            <option value="N">僅顯示未上線藥品</option>
-                            <option value="ALL">顯示全部狀態</option>
+                            <option value="ALL" selected>顯示全部狀態</option>
+                            <option value="Y">上線中</option>
+                            <option value="N">已關檔</option>
                         </select>
                     </div>
                     <div class="relative">
