@@ -85,8 +85,20 @@
             </section>
 
             <section class="w-full md:w-2/3 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col h-full overflow-y-auto">
-                <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-lg">
-                    <h2 class="text-base font-bold text-[#1B365D] flex items-center gap-2"><i class="fa-solid fa-calculator"></i> 劑量計算主機</h2>
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2 pb-2 border-b border-gray-300">
+                    
+                    <h2 class="text-xl font-bold text-[#1B365D] flex items-center">
+                        <i class="fa-solid fa-calculator mr-2 text-blue-500"></i> 劑量計算主機
+                    </h2>
+                    
+                    <div id="tool-toolbox-container" class="flex gap-2 items-center hidden">
+                        <select id="tool-selector" class="border border-orange-300 rounded px-2 py-1.5 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 text-orange-900 font-bold max-w-[150px] truncate shadow-sm">
+                            </select>
+                        <button id="btn-open-tool" type="button" onclick="window.openToolModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded shadow-sm text-sm font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-calculator"></i> 開啟計算
+                        </button>
+                    </div>
+                    
                 </div>
                 
                 <div class="p-5 flex-grow">
@@ -134,18 +146,9 @@
                         </div>
 
                         <div id="dynamic-parameters-container" class="hidden bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-blue-400">
-                            <div class="flex justify-between items-center mb-3 flex-wrap gap-2 border-b border-gray-100 pb-2">
-                                <label class="block text-sm font-bold text-blue-800 mb-0"><i class="fa-solid fa-keyboard mr-1"></i> Step 2. 輸入病患生理參數</label>
-                                
-                                <div id="tool-toolbox-container" class="flex gap-2 items-center hidden">
-                                    <select id="tool-selector" class="border border-orange-300 rounded px-2 py-1 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 text-orange-900 font-bold max-w-[150px] truncate shadow-sm">
-                                        </select>
-                                    <button id="btn-open-tool" type="button" onclick="window.openToolModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded shadow-sm text-sm font-bold transition flex items-center gap-1">
-                                        <i class="fa-solid fa-calculator"></i> 開啟計算
-                                    </button>
-                                </div>
-                            </div>
-                            
+                            <label class="block text-sm font-bold text-blue-800 mb-3 border-b border-gray-100 pb-2">
+                                <i class="fa-solid fa-keyboard mr-1"></i> Step 2. 輸入病患生理參數
+                            </label>
                             <div id="dynamic-parameters" class="grid grid-cols-1 sm:grid-cols-3 gap-4 px-1"></div>
                         </div>
 
