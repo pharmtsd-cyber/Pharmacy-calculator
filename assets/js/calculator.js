@@ -344,15 +344,16 @@ function selectDrug(drug) {
         renderDynamicParameters(currentFormula);
     }
     if (window.innerWidth < 768) {
-        const calcPanel = document.getElementById('calc-panel');
-        if (calcPanel) {
-            // 抓取計算機區塊的最外層容器 (包含標題)，並讓畫面平滑滾動到該處
-            const targetSection = calcPanel.parentElement.parentElement;
-            if (targetSection) {
-                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const leftList = document.getElementById('mobile-left-list');
+            const rightCalc = document.getElementById('mobile-right-calc');
+            if(leftList && rightCalc) {
+                leftList.classList.add('hidden');
+                leftList.classList.remove('flex');
+                
+                rightCalc.classList.remove('hidden');
+                rightCalc.classList.add('flex');
             }
         }
-    }
 } // selectDrug 結束的地方
 
 function renderDynamicParameters(formula) {
