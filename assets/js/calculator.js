@@ -811,3 +811,14 @@ window.clearToolInputs = function() {
     // 觸發重新計算 (因為變成空值，會自動顯示「請填寫所有參數」的提示文字)
     window.executeToolCalculation();
 };
+
+// 💡 新增：手機版側邊欄開關功能
+window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (!sidebar || !overlay) return;
+    
+    // 透過切換 -translate-x-full 達成滑出與隱藏效果
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+};
