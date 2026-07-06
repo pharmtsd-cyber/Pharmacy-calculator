@@ -645,3 +645,156 @@ function renderDynamicNav(domainStr) {
         }
     }
 }
+
+// ==========================================
+// 擴充功能：工具箱/流速計算機 (一次運算多公式)
+// ==========================================
+
+window.setupToolDropdown = function() {
+    const selector = document.getElementById('tool-selector');
+    const container = document.getElementById('tool-toolbox-container');
+    if (!selector || !container) return;
+    
+    // 尋找科別為 'TOOL' 且上線中的藥品(工具)
+    const tools = STORE.drugs.filter(d => d.domain === 'TOOL' && d.status === 'Y');
+    
+    if (tools.length === 0) {
+        container.classList.add('hidden'); // 如果沒建置工具，隱藏按鈕區塊
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    selector.innerHTML = tools.map(t => `<option value="${t.drug_id}">${t.local_name || t.generic_name}</option>`).join('');
+};
+
+window.openToolModal = function() {
+    const selector = document.getElementById('tool-selector');
+    if (!selector || !selector.value) return;
+    
+    const toolId = selector.value;
+    const toolDrug = STORE.drugs.find(d => String(d.drug_id) === String(toolId));
+    if (!toolDrug) return;
+    
+    document.getElementById('tool-modal-title').innerText = toolDrug.local_name || toolDrug.generic_name;
+    
+    // 抓取該工具下的「所有公式」
+    const formulas = STORE.formulas.filter(f => String(f.drug_id) === String(toolId) || (toolDrug.drug_code && String(f.drug_id) === String(toolDrug.drug_code)));
+    window.currentToolFormulas = formulas;
+    
+    // 解析所有公式，統整需要輸入的參數 (排除 min/max)
+    const requiredCodes = new Set();
+    const paramRegex = /{([a-zA-Z0-9_]+)}/g;
+    
+    formulas.forEach(f => {
+        const combinedText = (f.formula_min || '') + (f.formula_max || '');
+        let match;
+        while ((match = paramRegex.exec(combinedText)) !== null) {
+            const code = match[1].toLowerCase();
+            if (code !== 'min' && code !== 'max' && code !== 'prescribed') requiredCodes.add(match[1]);
+        }
+    });
+    
+    const paramContainer = document.getElementById('tool-dynamic-parameters');
+    paramContainer.innerHTML = '';
+    
+    if (requiredCodes.size === 0) {
+        paramContainer.innerHTML = '<div class="col-span-full text-sm text-gray-500 italic">此工具不需要輸入任何參數，請直接看下方結果。</div>';
+    } else {
+        // 💡 連動主畫面 Step 2：抓取已經輸入過的數值
+        const mainInputs = document.querySelectorAll('#dynamic-parameters .param-input');
+        const currentMainValues = {};
+        mainInputs.forEach(input => {
+            const code = input.getAttribute('data-code');
+            if (code && input.value !== '') currentMainValues[code] = input.value;
+        });
+        
+        requiredCodes.forEach(code => {
+            const paramDef = STORE.parameters.find(p => p.param_code === code);
+            const paramName = paramDef ? paramDef.param_name : code;
+            const paramUnit = paramDef ? paramDef.default_unit : '';
+            const paramType = paramDef ? paramDef.param_type : 'INPUT';
+            const paramOptionsStr = paramDef ? paramDef.param_options : '';
+            
+            // 將主畫面已輸入的數值設為預設值
+            const prefillValue = currentMainValues[code] !== undefined ? currentMainValues[code] : '';
+            const div = document.createElement('div');
+            div.className = 'flex flex-col gap-1';
+            
+            if (paramType === 'SELECT' && paramOptionsStr) {
+                let optionsHtml = `<option value="">請選擇...</option>`;
+                paramOptionsStr.split('|').forEach(pair => {
+                    const [text, val] = pair.split(':');
+                    if (text && val !== undefined) {
+                        const selected = String(val) === String(prefillValue) ? 'selected' : '';
+                        optionsHtml += `<option value="${val}" ${selected}>${text}</option>`;
+                    }
+                });
+                div.innerHTML = `
+                    <label class="text-[11px] font-bold text-gray-700">${paramName}</label>
+                    <select data-code="${code}" class="tool-param-input border border-orange-200 rounded p-1.5 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 shadow-inner">
+                        ${optionsHtml}
+                    </select>
+                `;
+            } else {
+                div.innerHTML = `
+                    <label class="text-[11px] font-bold text-gray-700">${paramName} ${paramUnit ? `<span class="text-gray-400">(${paramUnit})</span>` : ''}</label>
+                    <input type="number" data-code="${code}" value="${prefillValue}" step="any" min="0" placeholder="輸入..." class="tool-param-input border border-orange-200 rounded p-1.5 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 shadow-inner">
+                `;
+            }
+            paramContainer.appendChild(div);
+        });
+    }
+    
+    // 綁定事件：彈窗內參數修改時，即時重算所有結果
+    document.querySelectorAll('.tool-param-input').forEach(input => {
+        input.addEventListener('change', window.executeToolCalculation);
+        input.addEventListener('input', window.debounce(window.executeToolCalculation, 100));
+    });
+    
+    document.getElementById('tool-modal').classList.remove('hidden');
+    window.executeToolCalculation(); // 打開時立刻計算第一次
+};
+
+window.executeToolCalculation = function() {
+    if (!window.currentToolFormulas || window.currentToolFormulas.length === 0) return;
+    
+    // 收集彈窗內的使用者輸入
+    const scopeVals = {};
+    let allFilled = true;
+    document.querySelectorAll('.tool-param-input').forEach(input => {
+        if(input.value === '') allFilled = false;
+        scopeVals[input.getAttribute('data-code')] = parseFloat(input.value) || 0;
+    });
+    
+    const resultsContainer = document.getElementById('tool-results-container');
+    resultsContainer.innerHTML = '';
+    
+    if (!allFilled && document.querySelectorAll('.tool-param-input').length > 0) {
+        resultsContainer.innerHTML = '<div class="text-sm text-gray-500 italic text-center py-4">請先填寫上方所有參數，以顯示換算結果</div>';
+        return;
+    }
+    
+    // 迴圈執行這項工具的「所有公式」
+    window.currentToolFormulas.forEach(f => {
+        let calcMin = window.sharedCalc(f.formula_min, scopeVals);
+        let calcMax = window.sharedCalc(f.formula_max, scopeVals);
+        
+        let resultText = '--';
+        if (calcMin !== null || calcMax !== null) {
+            const sMin = calcMin !== null ? Math.round(calcMin * 100) / 100 : '--';
+            const sMax = calcMax !== null ? Math.round(calcMax * 100) / 100 : '';
+            resultText = sMin + (sMax !== '' ? ' ~ ' + sMax : '');
+        }
+        
+        const card = document.createElement('div');
+        card.className = 'border-l-4 border-orange-400 bg-white p-3 rounded shadow-sm flex flex-col justify-center';
+        card.innerHTML = `
+            <div class="flex justify-between items-center flex-wrap gap-2">
+                <div class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-angle-right text-orange-400 mr-1 text-[10px]"></i> ${f.formula_name}</div>
+                <div class="text-lg font-extrabold text-orange-600">${resultText} <span class="text-xs text-gray-500 font-normal ml-0.5">${f.result_unit || ''}</span></div>
+            </div>
+            ${f.remark ? `<div class="text-[10px] text-gray-500 mt-1 border-t border-gray-100 pt-1">${f.remark}</div>` : ''}
+        `;
+        resultsContainer.appendChild(card);
+    });
+};
