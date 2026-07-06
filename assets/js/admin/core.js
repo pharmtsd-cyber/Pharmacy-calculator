@@ -208,6 +208,7 @@ window.applyDataToStoreAndRender = function(data) {
     try { if(typeof renderHomeContent === 'function') renderHomeContent(); } catch(e){} 
     try { if(typeof applyFilters === 'function') applyFilters(); } catch(e){}
     try { if(typeof setupDrugDomainSelect === 'function') setupDrugDomainSelect(); } catch(e){}
+    try { if(typeof setupToolDropdown === 'function') setupToolDropdown(); } catch(e){}
 };
 
 // ==========================================
