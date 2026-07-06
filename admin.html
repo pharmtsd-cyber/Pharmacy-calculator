@@ -337,15 +337,17 @@
                 <div><label class="block text-xs font-bold mb-1">頁尾版權宣告</label><input type="text" id="set-copyright" class="w-full border rounded p-2 text-sm" placeholder="如：Copyright © 2026"></div>
                 <div><label class="block text-xs font-bold mb-1">使用規則與說明 (多行)</label><textarea id="set-rules" rows="8" class="w-full border rounded p-2 text-sm" placeholder="輸入規則..."></textarea></div>
                 <div class="mb-4"><label class="block text-sm font-bold text-[#1B365D] mb-1">系統使用規則 / 免責聲明</label><textarea id="set-rules" class="w-full border ... " rows="4"></textarea></div>
-                <div class="mt-4 mb-4"><label class="block text-sm font-bold text-[#1B365D] mb-1">前台動態科別選單設定</label><div class="text-[10px] text-gray-500 mb-1">格式請依照「代碼:名稱」，並用半形逗號分隔。例如：PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素</div>
-                <input type="text" id="set-domains" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#1B365D] focus:outline-none" placeholder="PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素"></div>
-            <div class="mt-6">
-                <button type="button" id="btn-save-settings" onclick="window.saveSettings()" class="bg-[#1B365D] text-white px-4 py-2 rounded ...">
-                    儲存首頁與系統設定
-                </button>
-            </div>
-                <button onclick="window.saveSettings()" class="w-48 bg-[#1B365D] text-white px-4 py-2 rounded text-sm font-bold shadow">儲存首頁設定</button>
-            </div>
+                <div class="mt-4 mb-4">
+                        <label class="block text-sm font-bold text-[#1B365D] mb-1">前台動態科別選單設定</label>
+                        <div class="text-[10px] text-gray-500 mb-1">格式請依照「代碼:名稱」，並用半形逗號分隔。例如：PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素</div>
+                        <input type="text" id="set-domains" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-[#1B365D] focus:outline-none" placeholder="PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素">
+                    </div>
+                
+                    <div class="mt-6">
+                        <button type="button" id="btn-save-settings" onclick="window.saveSettings()" class="bg-[#1B365D] hover:bg-blue-800 text-white px-4 py-2 rounded shadow transition font-bold">
+                            儲存首頁與系統設定
+                        </button>
+                    </div>
         </section>
 
         <section id="feedbacks" class="tab-content">
