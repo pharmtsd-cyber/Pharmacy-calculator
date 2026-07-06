@@ -42,11 +42,12 @@
 
     <main class="flex-grow flex flex-col h-screen overflow-hidden relative bg-gray-50 w-full">
         
-        <div class="md:hidden bg-[#1B365D] text-white p-3 flex justify-between items-center shadow-md shrink-0 z-20">
-            <div class="font-bold flex items-center text-sm">
-                <img src="https://github.com/pharmtsd-cyber/Pharmacy-calculator/blob/main/logo_White.png?raw=true" class="w-6 h-6 mr-2 object-contain" alt="LOGO"> 劑量建議計算機
+        <div class="md:hidden bg-[#1B365D] text-white px-3 py-2 flex justify-between items-center shadow-md shrink-0 z-20 w-full overflow-hidden">
+            <div class="font-bold flex items-center text-sm min-w-0 mr-2">
+                <img src="https://github.com/pharmtsd-cyber/Pharmacy-calculator/blob/main/logo_White.png?raw=true" class="w-6 h-6 mr-2 object-contain shrink-0" alt="LOGO"> 
+                <span class="truncate">劑量建議計算機</span>
             </div>
-            <button onclick="window.toggleSidebar()" class="text-white hover:text-blue-200 px-3 py-1 rounded border border-white/20 shadow-sm transition active:bg-blue-800 flex items-center gap-1">
+            <button onclick="window.toggleSidebar()" class="shrink-0 text-white hover:text-blue-200 px-3 py-1.5 rounded border border-white/20 shadow-sm transition active:bg-blue-800 flex items-center gap-1 text-sm">
                 <i class="fa-solid fa-bars"></i> 選單
             </button>
         </div>
