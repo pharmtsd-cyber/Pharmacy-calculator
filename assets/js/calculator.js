@@ -74,6 +74,7 @@ async function initializeCalculator() {
 
         // 背景靜默下載/更新最新的雲端資料
         await window.loadAllData();
+        window.renderHomePage();
         
         // 雲端資料回來後，再刷一次最新的科別設定並存入快取
         const latestDomains = STORE.settings.domain_settings || "PED:小兒科,NICU:新生兒ICU,ADU:成人抗生素";
