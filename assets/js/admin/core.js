@@ -207,6 +207,7 @@ window.applyDataToStoreAndRender = function(data) {
     try { if(CONTEXT_DRUG && typeof renderLocalFormulas === 'function') renderLocalFormulas(); } catch(e){}
     try { if(typeof renderHomeContent === 'function') renderHomeContent(); } catch(e){} 
     try { if(typeof applyFilters === 'function') applyFilters(); } catch(e){}
+    try { if(typeof setupDrugDomainSelect === 'function') setupDrugDomainSelect(); } catch(e){}
 };
 
 // ==========================================
