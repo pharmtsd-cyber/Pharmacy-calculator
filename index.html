@@ -75,7 +75,7 @@
 
         <div id="calc-view" class="view-section hidden w-full h-full overflow-hidden flex flex-col md:flex-row gap-6 p-4 md:p-6">
             
-            <section class="w-full md:w-1/3 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col h-full">
+            <section id="mobile-left-list" class="w-full md:w-1/3 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col h-full">
                 <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-[#1B365D] text-white rounded-t-lg">
                     <h2 class="text-base font-bold flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> <span id="calc-domain-title">藥品篩選器</span></h2>
                 </div>
@@ -98,19 +98,19 @@
                 </div>
             </section>
 
-            <section class="w-full md:w-2/3 bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col h-full overflow-y-auto">
-                <div class="flex justify-between items-center mb-4 flex-wrap gap-2 pb-2 border-b border-gray-300">
+            <section id="mobile-right-calc" class="w-full md:w-2/3 bg-white rounded-lg shadow-sm border border-gray-100 hidden md:flex flex-col h-full overflow-y-auto">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2 pb-2 border-b border-gray-300 p-4 md:p-0 md:pt-4 md:px-5">
                     
                     <div class="flex items-center gap-2">
                         <h2 class="text-xl font-bold text-[#1B365D] flex items-center">
                             <i class="fa-solid fa-calculator mr-2 text-blue-500"></i> 劑量計算主機
                         </h2>
-                        <button onclick="document.getElementById('search-input').scrollIntoView({behavior: 'smooth', block: 'center'}); setTimeout(() => document.getElementById('search-input').focus(), 300);" class="md:hidden bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold shadow-sm border border-blue-200 active:bg-blue-200 transition">
-                            <i class="fa-solid fa-arrow-up"></i> 換藥品
+                        <button onclick="window.backToMobileList()" class="md:hidden bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold shadow-sm border border-blue-200 active:bg-blue-200 transition flex items-center gap-1">
+                            <i class="fa-solid fa-arrow-left"></i> 重新選藥
                         </button>
                     </div>
                     
-                    <div id="tool-toolbox-container" class="flex gap-2 items-center hidden">
+                    <div id="tool-toolbox-container" class="flex gap-2 items-center hidden pr-4 md:pr-0">
                         <select id="tool-selector" class="border border-orange-300 rounded px-2 py-1.5 text-sm focus:border-orange-500 focus:outline-none bg-orange-50 text-orange-900 font-bold max-w-[150px] truncate shadow-sm">
                             </select>
                         <button id="btn-open-tool" type="button" onclick="window.openToolModal()" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded shadow-sm text-sm font-bold transition flex items-center gap-1">
@@ -120,7 +120,7 @@
                     
                 </div>
                 
-                <div class="p-5 flex-grow">
+                <div class="px-5 pb-5 pt-1 flex-grow">
                     <div id="calc-placeholder" class="text-center py-20 text-gray-400 flex flex-col items-center gap-3">
                         <i class="fa-solid fa-hand-pointer text-4xl text-gray-300"></i><p class="text-sm">請由左側選擇藥品以開始計算</p>
                     </div>
