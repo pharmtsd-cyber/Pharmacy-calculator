@@ -26,24 +26,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.switchTab = function(targetId) {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    
-    const targetNav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
-    if(targetNav) targetNav.classList.add('active');
-    
-    const targetContent = document.getElementById(targetId);
-    if(targetContent) targetContent.classList.add('active');
-    
-    const navFormulas = document.getElementById('nav-formulas');
-    if (targetId !== 'formulas') {
-        if(navFormulas) navFormulas.classList.add('hidden');
-    } else {
-        if(navFormulas) {
-            navFormulas.classList.remove('hidden');
-            navFormulas.classList.add('active');
+    // 利用 requestAnimationFrame 避免阻塞 UI 渲染，解決卡頓問題
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        
+        const targetNav = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+        if(targetNav) targetNav.classList.add('active');
+        
+        const targetContent = document.getElementById(targetId);
+        if(targetContent) targetContent.classList.add('active');
+        
+        const navFormulas = document.getElementById('nav-formulas');
+        if (targetId !== 'formulas') {
+            if(navFormulas) navFormulas.classList.add('hidden');
+        } else {
+            if(navFormulas) {
+                navFormulas.classList.remove('hidden');
+                navFormulas.classList.add('active');
+            }
         }
-    }
+    });
 };
 
 window.scrollToTop = function() {
