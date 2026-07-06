@@ -343,6 +343,16 @@ function selectDrug(drug) {
         currentFormula = drugFormulas[0]; 
         renderDynamicParameters(currentFormula);
     }
+    if (window.innerWidth < 768) {
+        const calcPanel = document.getElementById('calc-panel');
+        if (calcPanel) {
+            // 抓取計算機區塊的最外層容器 (包含標題)，並讓畫面平滑滾動到該處
+            const targetSection = calcPanel.parentElement.parentElement;
+            if (targetSection) {
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
 } // selectDrug 結束的地方
 
 function renderDynamicParameters(formula) {
