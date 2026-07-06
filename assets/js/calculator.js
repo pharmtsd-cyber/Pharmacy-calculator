@@ -841,3 +841,16 @@ window.toggleSidebar = function() {
     sidebar.classList.toggle('-translate-x-full');
     overlay.classList.toggle('hidden');
 };
+
+// 💡 新增：手機版專用，點擊「重新選藥」時切換回清單畫面
+window.backToMobileList = function() {
+    const leftList = document.getElementById('mobile-left-list');
+    const rightCalc = document.getElementById('mobile-right-calc');
+    if(leftList && rightCalc) {
+        leftList.classList.remove('hidden');
+        leftList.classList.add('flex');
+        
+        rightCalc.classList.add('hidden');
+        rightCalc.classList.remove('flex');
+    }
+};
