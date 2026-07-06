@@ -644,12 +644,17 @@ function renderDynamicNav(domainStr) {
                 document.getElementById('calc-panel').classList.add('hidden');
                 applyFilters(); 
             }
-            if (window.innerWidth < 768) {
+                if (window.innerWidth < 768) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('sidebar-overlay');
                 if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
                     sidebar.classList.add('-translate-x-full');
                     overlay.classList.add('hidden');
+                }
+                
+                // 💡 補上這段防呆：切換科別時，強制切換回「藥品清單」視圖
+                if (typeof backToMobileList === 'function') {
+                    backToMobileList();
                 }
             }
         });
