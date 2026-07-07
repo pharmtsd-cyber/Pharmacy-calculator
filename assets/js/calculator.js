@@ -865,10 +865,14 @@ window.backToMobileList = function() {
 // 渲染首頁 (使用規則與系統公告)
 // ==========================================
 window.renderHomePage = function() {
-    // 1. 渲染系統使用規則
+    // 1. 渲染系統使用規則 (加入陣列轉物件防呆)
     const rulesContainer = document.getElementById('home-rules');
     if (rulesContainer) {
-        rulesContainer.innerText = STORE.settings.usage_rules || '尚未設定系統使用規則。';
+        let settingsObj = STORE.settings;
+        if (Array.isArray(STORE.settings)) {
+            settingsObj = STORE.settings.reduce((acc, cur) => { acc[cur.setting_key] = cur.setting_value; return acc; }, {});
+        }
+        rulesContainer.innerText = settingsObj.usage_rules || '尚未設定系統使用規則。';
     }
 
     // 2. 渲染系統公告 (區分置頂與一般)
@@ -880,7 +884,7 @@ window.renderHomePage = function() {
         return;
     }
 
-    // 💡 排序邏輯：置頂優先 (Y)，接著依日期由新到舊排序
+    // 排序邏輯：置頂優先 (Y)，接著依日期由新到舊排序
     const sortedAnnos = [...STORE.announcements].sort((a, b) => {
         if (a.is_pinned === 'Y' && b.is_pinned !== 'Y') return -1;
         if (a.is_pinned !== 'Y' && b.is_pinned === 'Y') return 1;
@@ -891,31 +895,41 @@ window.renderHomePage = function() {
 
     annoContainer.innerHTML = sortedAnnos.map(anno => {
         const isPinned = anno.is_pinned === 'Y';
-        // 處理日期格式 (去掉後面的時間)
-        const dateStr = anno.date ? new Date(anno.date).toISOString().split('T')[0] : '';
-        const versionBadge = anno.version ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${isPinned ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-600'}">${anno.version}</span>` : '';
         
+        // 安全解析日期 (防呆：避免日期空白或格式錯誤導致當機)
+        let dateStr = '';
+        try {
+            if (anno.date) {
+                const d = new Date(anno.date);
+                if (!isNaN(d.getTime())) dateStr = d.toISOString().split('T')[0];
+            }
+        } catch(e) { console.warn("公告日期解析錯誤", e); }
+        
+        const versionBadge = anno.version ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${isPinned ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-600'}">${anno.version}</span>` : '';
+        
+        // 安全抓取內文
+        const contentText = anno.content || '';
+
         if (isPinned) {
-            // 📌 置頂公告視覺：醒目的暖黃色卡片
+            // 📌 置頂公告視覺：移除會造成畫面崩潰的 overflow-hidden，改用簡單的 border-l-4 來呈現左側粗邊框
             return `
-                <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-amber-400"></div>
-                    <div class="flex justify-between items-center mb-1 pl-1">
+                <div class="bg-amber-50 border border-amber-200 border-l-4 border-l-amber-500 p-3 rounded-lg shadow-sm">
+                    <div class="flex justify-between items-center mb-2">
                         <span class="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1"><i class="fa-solid fa-thumbtack"></i> 重要置頂</span>
                         <span class="text-xs text-amber-700 font-bold">${dateStr} ${versionBadge}</span>
                     </div>
-                    <div class="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed mt-2 pl-1">${anno.content || ''}</div>
+                    <div class="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">${contentText}</div>
                 </div>
             `;
         } else {
             // 📝 一般公告視覺：乾淨的淺灰底卡片
             return `
-                <div class="bg-white border border-gray-200 p-3 rounded-lg shadow-sm">
-                    <div class="flex justify-between items-center mb-1 border-b border-gray-100 pb-1">
+                <div class="bg-white border border-gray-200 border-l-4 border-l-gray-300 p-3 rounded-lg shadow-sm">
+                    <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
                         <span class="text-xs text-gray-500 font-bold"><i class="fa-regular fa-calendar-check mr-1 text-gray-400"></i> ${dateStr}</span>
                         ${versionBadge}
                     </div>
-                    <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed mt-1">${anno.content || ''}</div>
+                    <div class="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">${contentText}</div>
                 </div>
             `;
         }
